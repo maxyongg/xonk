@@ -506,7 +506,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version">xonk v2026.07.24f</div>
+<div class="version">xonk v2026.07.24g</div>
 
 <script>
 /* ================= config ================= */
@@ -1354,14 +1354,25 @@ function render(){
     <div class="demo-bar"><b>Example list</b><span>this is xonk in use — browse freely, nothing here is yours to break</span>
     <button data-demo-signup>Create your own</button><button data-exit-demo>Back</button></div>`);
 }
-/* demo mode: the repo still carries the pre-account JSON snapshot of my own
-   list — perfect fixed example data, loaded read-only */
+/* demo mode: live copy of the demo account's current list via the public
+   demo-data edge function; falls back to the frozen repo JSON snapshot */
 async function enterDemo(){
   S.demo = true; S.view = 'home';
-  await Promise.all(Object.keys(COLLECTIONS).map(async k=>{
-    try{ S.data[k] = await loadLocal(k); }
-    catch(e){ S.data[k] = {items:[]}; }
-  }));
+  Object.keys(COLLECTIONS).forEach(k=>{ S.data[k] = {items:[]}; });
+  try{
+    const r = await fetch(`${SUPA_URL}/functions/v1/demo-data`, {
+      headers:{ apikey: SUPA_KEY, Authorization: 'Bearer '+SUPA_KEY }
+    });
+    if(!r.ok) throw new Error('demo endpoint '+r.status);
+    const j = await r.json();
+    if(!(j.items||[]).length) throw new Error('empty');
+    j.items.forEach(row=>{ if(S.data[row.kind]) S.data[row.kind].items.push(rowToItem(row)); });
+  }catch(e){
+    await Promise.all(Object.keys(COLLECTIONS).map(async k=>{
+      try{ S.data[k] = await loadLocal(k); }
+      catch(_){ S.data[k] = {items:[]}; }
+    }));
+  }
   render();
   window.scrollTo({top:0});
 }
