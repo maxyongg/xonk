@@ -146,26 +146,20 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .rtile .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.32),rgba(0,0,0,.02) 42%,rgba(0,0,0,.62))}
 .rtile .type{position:absolute;top:9px;left:10px;font-family:var(--font-body);font-size:8.5px;font-weight:700;letter-spacing:.09em;color:rgba(255,255,255,.92)}
 .rtile .rt{position:absolute;top:8px;right:10px}
-.rtile .rt .qmini{width:22px;height:22px}
+.rtile .rt .qswatch{width:16px;height:16px}
 .rtile .nm{position:absolute;left:10px;right:10px;bottom:10px;color:#fff;font-family:var(--font-head);font-weight:700;font-size:13px;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 
 /* ---------- table ---------- */
 .cover{flex:0 0 auto;width:54px;height:78px;border-radius:7px;object-fit:cover;background:var(--ink-3)}
-/* mini quadrant thumbnail: axes cross + one dot, shown wherever stars used to be */
-.qmini{display:inline-block;width:40px;height:40px;line-height:0;flex:0 0 auto}
-.qmini svg{width:100%;height:100%;display:block}
-.qmini .qm-axis{stroke:var(--line);stroke-width:1}
-.qmini .qm-dot{fill:var(--acid)}
-.qmini .qm-dot.legacy{fill:none;stroke:var(--mute);stroke-width:1.5}
-.qmini.ondark .qm-axis{stroke:rgba(255,255,255,.5)}
-.qmini.ondark .qm-dot{fill:#fff}
-.qmini.ondark .qm-dot.legacy{fill:none;stroke:rgba(255,255,255,.85)}
+/* rating swatch: one colour = one unique point on the quadrant */
+.qswatch{display:inline-block;width:18px;height:18px;border-radius:50%;flex:0 0 auto;border:1px solid rgba(0,0,0,.15)}
+.qswatch.legacy{background:none!important;border-width:3px;border-style:solid}
+.qswatch.ondark{box-shadow:0 0 0 1.5px rgba(255,255,255,.9)}
 .rate-empty{font-family:var(--font-body);font-size:13px;color:var(--mute)}
 /* stats scatter: every rated item as one dot on the shared quadrant */
 .qscatter{width:100%;max-width:260px;display:block;margin:0 auto;background:var(--paper);border:1px solid var(--line);border-radius:10px}
 .qscatter .qs-axis{stroke:var(--line);stroke-width:1}
-.qscatter .qs-dot{fill:var(--acid);opacity:.8}
-.qscatter .qs-dot.legacy{fill:none;stroke:var(--mute);stroke-width:1.2;opacity:.8}
+.qscatter .qs-dot{opacity:.85}
 .tablewrap{margin-top:44px;max-width:100%}
 .table-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
 .type-pills{display:flex;gap:8px;flex-wrap:wrap}
@@ -219,7 +213,7 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
   .col-creator,.col-type,.col-year,.col-date,.col-rating{display:none}
   .cell-title{font-size:15px;white-space:normal;line-height:1.25}
   .row-rate{display:block;margin-top:6px}
-  .row-rate .qmini{width:34px;height:34px}
+  .row-rate .qswatch{width:20px;height:20px}
   .row-sub{display:block;font-family:var(--font-body);font-size:10.5px;color:var(--mute);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .titlecell{gap:13px;align-items:flex-start}
   .swatch{width:50px;height:50px}
@@ -347,6 +341,13 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .suggest-meta{display:flex;flex-direction:column;min-width:0}
 .suggest-title{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .suggest-year{font-family:var(--font-body);font-size:11px;color:var(--mute)}
+.add-preview{display:flex;gap:14px;align-items:flex-start;margin:2px 0 12px}
+.add-preview-cover{width:74px;height:106px;border-radius:8px;object-fit:cover;background:var(--ink-3);flex:0 0 auto}
+.add-preview-meta{min-width:0}
+.add-preview-title{font-family:var(--font-head);font-weight:700;font-size:19px;line-height:1.2}
+.add-preview-sub{font-family:var(--font-body);font-size:13px;color:var(--mute);margin-top:4px}
+.add-desc{font-family:var(--font-body);font-size:12.5px;line-height:1.55;color:var(--mute);
+  margin:0 0 14px;border-left:2px solid var(--line);padding-left:10px}
 label.f,div.f{display:block;margin-bottom:12px}
 label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--mute);
   text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px}
@@ -363,22 +364,27 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
   touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;
 }
-.quad .ax{position:absolute;background:var(--line);pointer-events:none}
+.quad-canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:inherit;pointer-events:none}
+.quad .ax{position:absolute;background:rgba(0,0,0,.18);pointer-events:none}
 .quad .ax.h{left:0;right:0;top:50%;height:1px}
 .quad .ax.v{top:0;bottom:0;left:50%;width:1px}
 .quad-lab{
   position:absolute;font-family:var(--font-body);font-size:9px;font-weight:700;
-  letter-spacing:.08em;text-transform:uppercase;color:var(--mute);pointer-events:none;
+  letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.95);
+  text-shadow:0 1px 2px rgba(0,0,0,.35);pointer-events:none;
 }
 .quad-lab.top{top:6px;left:50%;transform:translateX(-50%)}
 .quad-lab.bottom{bottom:6px;left:50%;transform:translateX(-50%)}
 .quad-lab.left{left:6px;top:50%;transform:translateY(-50%) rotate(180deg);writing-mode:vertical-rl}
 .quad-lab.right{right:6px;top:50%;transform:translateY(-50%);writing-mode:vertical-rl}
 .quad-dot{
-  position:absolute;width:14px;height:14px;border-radius:50%;background:var(--acid);
-  transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 2px var(--paper);
+  position:absolute;width:16px;height:16px;border-radius:50%;background:none;
+  border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);
+  transform:translate(-50%,-50%);pointer-events:none;
 }
-.quad-dot.legacy{background:none;border:2px solid var(--mute);box-shadow:none}
+.quad-dot.legacy{border-style:dashed}
+.quad-chip{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
+.quad-chip.legacy{background:none!important;border-width:3px}
 .quad-foot{display:flex;align-items:center;gap:10px;margin:8px auto 0;max-width:320px}
 .quad-read{flex:1;font-family:var(--font-body);font-size:12px;color:var(--mute);line-height:1.4}
 .quad-clear{
@@ -454,7 +460,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   <div class="grab"></div>
   <h2 id="editTitle">Add item</h2>
   <div class="typepick" id="typePick" style="display:none"></div>
-  <div style="display:flex;align-items:center;gap:10px;margin:0 0 12px">
+  <div id="coverRow" style="display:flex;align-items:center;gap:10px;margin:0 0 12px">
     <img id="coverPreview" style="width:54px;height:78px;border-radius:7px;object-fit:cover;background:var(--ink-3);display:none">
     <button class="btn ghost" type="button" id="fetchCoverBtn" style="flex:0 0 auto;padding:10px 14px">Fetch cover</button>
   </div>
@@ -464,7 +470,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   <div id="fields"></div>
   <!-- div, not label: a label forwards any click inside it to its first button,
        which made every graph tap immediately trigger the Clear button -->
-  <div class="f"><span id="rlabel">Rating</span><div class="ratepick" id="ratepick"></div></div>
+  <div class="f" id="ratingWrap"><span id="rlabel">Rating</span><div class="ratepick" id="ratepick"></div></div>
   <div class="acts">
     <button class="btn ghost" id="cancelEdit">Cancel</button>
     <button class="btn primary" id="saveEdit">Save</button>
@@ -520,7 +526,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version">xonk v2026.07.23b</div>
+<div class="version">xonk v2026.07.23g</div>
 
 <script>
 /* ================= config ================= */
@@ -825,7 +831,7 @@ async function searchSuggestions(k, q){
   return [];
 }
 function onTitleInput(e){
-  if(e.target.dataset.k!=='name') return;
+  if(e.target.id!=='addSearch' && e.target.dataset.k!=='name') return;
   clearTimeout(suggestTimer);
   const q = e.target.value.trim();
   const box = $('#titleSuggest');
@@ -1265,15 +1271,39 @@ function quadLabel(q){
     ? `quality ${fmtSigned(q.y)} — enjoyment not set`
     : `enjoyment ${fmtSigned(q.x)} · quality ${fmtSigned(q.y)}`;
 }
-function quadMiniHTML(q, cls){
+/* one colour family per quadrant, driven by the angle around the centre:
+     enjoyed + good      → greens
+     not enjoyed + good  → blues
+     not enjoyed + bad   → reds
+     enjoyed + bad       → oranges (guilty pleasure)
+   Distance from the centre controls intensity: mild opinions are pale,
+   extreme ones vivid. (angle, distance) is unique for every point. */
+/* hue anchored at the axes so each quadrant sweeps a wide arc:
+     Q1 (+,+): lime 65 → green → teal 190
+     Q2 (−,+): teal 190 → blue → purple 280
+     Q3 (−,−): purple 280 → magenta → red 380 (=20)
+     Q4 (+,−): red 20 → orange → lime 65 */
+const AXIS_HUES = [65, 190, 280, 380, 425]; // at +x, +y, −x, −y, back to +x
+function quadHue(angleDeg){
+  const a = ((angleDeg % 360) + 360) % 360;
+  const seg = Math.floor(a / 90), t = (a % 90) / 90;
+  return (AXIS_HUES[seg] + (AXIS_HUES[seg+1] - AXIS_HUES[seg]) * t) % 360;
+}
+function quadColorRGB(x, y){
+  const hue = quadHue(Math.atan2(y, x) * 180 / Math.PI);
+  const r = Math.max(Math.abs(x), Math.abs(y)) / 100;  // 0 centre → 1 edge
+  return hsl2rgb(hue, .30 + .65*r, .86 - .50*r);       // pastel centre → deep vivid edge
+}
+function quadColor(x, y){
+  const [r,g,b] = quadColorRGB(x, y);
+  return `rgb(${r},${g},${b})`;
+}
+function quadSwatchHTML(q, cls){
   if(!q) return `<span class="rate-empty">–</span>`;
-  const cx = 20 + ((q.x==null?0:q.x)/100)*17;
-  const cy = 20 - (q.y/100)*17;
-  return `<span class="qmini${cls?' '+cls:''}" title="${quadLabel(q)}"><svg viewBox="0 0 40 40" aria-hidden="true">
-    <line class="qm-axis" x1="2" y1="20" x2="38" y2="20"/>
-    <line class="qm-axis" x1="20" y1="2" x2="20" y2="38"/>
-    <circle class="qm-dot${q.legacy?' legacy':''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${q.legacy?3.2:3.8}"/>
-  </svg></span>`;
+  const col = quadColor(q.x==null?0:q.x, q.y);
+  const c = 'qswatch'+(q.legacy?' legacy':'')+(cls?' '+cls:'');
+  const st = q.legacy ? `border-color:${col}` : `background:${col}`;
+  return `<span class="${c}" title="${quadLabel(q)}" style="${st}"></span>`;
 }
 function computeHome(){
   const cats = [
@@ -1359,7 +1389,7 @@ function renderHome(){
     return `<div class="rtile" data-open="${r.k}:${r.item.id}">
       <div class="bg" style="${bgStyle(r.item)}"></div><div class="shade"></div>
       <div class="type">${TYPE_LABELS[r.k].toUpperCase()}</div>
-      ${q?`<div class="rt">${quadMiniHTML(q,'ondark')}</div>`:''}
+      ${q?`<div class="rt">${quadSwatchHTML(q,'ondark')}</div>`:''}
       <div class="nm">${esc(r.item.name||'Untitled')}</div>
     </div>`;
   }).join('') : `<div class="empty" style="padding:26px 10px">Nothing with a date logged yet.</div>`;
@@ -1391,7 +1421,7 @@ function renderTable(){
     const cr = r.item[creatorField(r.k)] || '';
     const dstr = fmtDate(dateAddedOf(r));
     const subParts = [TYPE_LABELS[r.k], yr, (dstr!=='—'?dstr:'')].filter(Boolean).join(' · ');
-    const stars = quadMiniHTML(quadOf(r.item, r.c.scale));
+    const stars = quadSwatchHTML(quadOf(r.item, r.c.scale));
     return `<tr data-open="${r.k}:${r.item.id}">
       <td class="cell-idx col-idx num">${String(ix+1).padStart(2,'0')}</td>
       <td class="col-title"><div class="titlecell"><div class="swatch" style="${bgStyle(r.item)}"></div><div class="t"><span class="cell-title">${esc(r.item.name||'Untitled')}</span><span class="row-rate">${stars}</span><span class="row-sub">${subParts}</span></div></div></td>
@@ -1553,7 +1583,9 @@ function renderCategoryStats(k){
   const scatterDots = s.points.map(q=>{
     const cx = 100 + ((q.x==null?0:q.x)/100)*92;
     const cy = 100 - (q.y/100)*92;
-    return `<circle class="qs-dot${q.legacy?' legacy':''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3"/>`;
+    const col = quadColor(q.x==null?0:q.x, q.y);
+    const paint = q.legacy ? `fill="none" stroke="${col}" stroke-width="1.5"` : `fill="${col}"`;
+    return `<circle class="qs-dot${q.legacy?' legacy':''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" ${paint}/>`;
   }).join('');
   const scatter = s.points.length ? `<svg class="qscatter" viewBox="0 0 200 200" aria-hidden="true">
     <line class="qs-axis" x1="4" y1="100" x2="196" y2="100"/>
@@ -1654,6 +1686,41 @@ function optionsFor(key){
 }
 
 /* ================= edit sheet ================= */
+function fieldFormHTML(c){
+  let html='', pend='';
+  c.fields.forEach(f=>{
+    const v = S.editing[f.k] ?? '';
+    const dl = f.list ? ` list="dl_${f.k}"` : '';
+    const dlEl = f.list ? `<datalist id="dl_${f.k}">${optionsFor(f.k).map(o=>`<option value="${esc(o)}">`).join('')}</datalist>` : '';
+    let input;
+    if(f.t==='select'){
+      input = `<select class="in" data-k="${f.k}"><option value=""></option>${
+        f.opts.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select>`;
+    } else {
+      const inType = f.t==='number' ? 'number' : f.t==='date' ? 'date' : 'text';
+      input = `<input class="in" data-k="${f.k}" type="${inType}"
+        inputmode="${f.t==='number'?'numeric':'text'}" value="${esc(v)}"${dl}>${dlEl}`;
+    }
+    const block = `<label class="f"><span>${f.l}</span>${input}</label>`;
+    if(f.half){ pend += block; } else { html += block; }
+  });
+  if(pend) html += `<div class="two">${pend}</div>`;
+  return html;
+}
+/* which chrome shows per step: search = bare, detail = rating+date only,
+   form = the old fully editable sheet (edit & manual add) */
+function setEditChrome(mode){
+  const on = mode!=='search';
+  $('#coverRow').style.display = mode==='form' ? 'flex' : 'none';
+  $('#ratingWrap').style.display = on ? 'block' : 'none';
+  $('#saveEdit').style.display = on ? 'block' : 'none';
+  const ipVerb = {books:'Currently reading', tv:'Currently watching', games:'Currently playing'}[S.tab];
+  $('#inProgressWrap').style.display = (on && ipVerb) ? 'block' : 'none';
+  if(ipVerb){
+    $('#inProgressBtn').textContent = ipVerb;
+    $('#inProgressBtn').setAttribute('aria-pressed', S.editing.inProgress ? 'true' : 'false');
+  }
+}
 function openEdit(item){
   const c = COLLECTIONS[S.tab];
   S.editing = item ? {...item} : {id:null, rating:null, rx:null, ry:null};
@@ -1674,40 +1741,126 @@ function openEdit(item){
       `<button type="button" data-addtype="${k}" aria-pressed="${S.tab===k}">${TYPE_LABELS[k]}</button>`).join('');
   }
 
-  let html='', pend='';
-  c.fields.forEach(f=>{
-    const v = S.editing[f.k] ?? '';
-    const dl = f.list ? ` list="dl_${f.k}"` : '';
-    const dlEl = f.list ? `<datalist id="dl_${f.k}">${optionsFor(f.k).map(o=>`<option value="${esc(o)}">`).join('')}</datalist>` : '';
-    let input;
-    if(f.t==='select'){
-      input = `<select class="in" data-k="${f.k}"><option value=""></option>${
-        f.opts.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select>`;
-    } else {
-      const inType = f.t==='number' ? 'number' : f.t==='date' ? 'date' : 'text';
-      input = `<input class="in" data-k="${f.k}" type="${inType}"
-        inputmode="${f.t==='number'?'numeric':'text'}" value="${esc(v)}"${dl}>${dlEl}`;
-    }
-    const block = `<label class="f"><span>${f.l}</span>${input}</label>`;
-    if(f.half){ pend += block; } else { html += block; }
-  });
-  if(pend) html += `<div class="two">${pend}</div>`;
-  $('#fields').innerHTML = html;
-  if($('#fields').children[0]){
-    $('#fields').children[0].insertAdjacentHTML('afterend', '<div class="suggest-list" id="titleSuggest"></div>');
+  if(item){
+    S.addStep = null;
+    renderAddDetail();
+  } else {
+    renderAddSearch();
   }
-  updateCoverPreview(S.editing.coverUrl||'');
-
-  const ipVerb = {books:'Currently reading', tv:'Currently watching', games:'Currently playing'}[S.tab];
-  $('#inProgressWrap').style.display = ipVerb ? 'block' : 'none';
-  if(ipVerb){
-    $('#inProgressBtn').textContent = ipVerb;
-    $('#inProgressBtn').setAttribute('aria-pressed', S.editing.inProgress ? 'true' : 'false');
-  }
-
-  renderQuadPicker();
 
   openSheet('#editSheet');
+}
+/* ---- add step 1: just a search bar ---- */
+function renderAddSearch(){
+  const c = COLLECTIONS[S.tab];
+  S.addStep = 'search';
+  const needsKey = (S.tab==='films'||S.tab==='tv') ? (S.cfg.tmdbKey?null:'TMDB')
+                 : S.tab==='games' ? (S.cfg.rawgKey?null:'RAWG') : null;
+  $('#fields').innerHTML = `
+    <label class="f"><span>Search</span><input class="in" id="addSearch" placeholder="Start typing a title…" autocomplete="off"></label>
+    <div class="suggest-list" id="titleSuggest"></div>
+    ${needsKey?`<p class="note warn">Searching ${c.label.toLowerCase()} needs a ${needsKey} API key — add one in Settings, or enter the item manually.</p>`:''}
+    <div class="acts" style="margin-top:6px">
+      <button type="button" class="btn ghost" id="manualAddBtn">Can't find it? Enter manually</button>
+    </div>`;
+  updateCoverPreview('');
+  setEditChrome('search');
+  $('#addSearch').focus();
+}
+/* manual fallback = the old fully editable form */
+function renderAddManual(){
+  const c = COLLECTIONS[S.tab];
+  S.addStep = 'manual';
+  $('#fields').innerHTML = fieldFormHTML(c);
+  $('#fields').children[0].insertAdjacentHTML('afterend', '<div class="suggest-list" id="titleSuggest"></div>');
+  updateCoverPreview(S.editing.coverUrl||'');
+  setEditChrome('form');
+  renderQuadPicker();
+}
+/* ---- add step 2: locked-in metadata + rating & date ---- */
+async function openAddDetail(picked){
+  const k = S.tab, e = S.editing;
+  S.addStep = 'detail';
+  const crK = creatorField(k), yrK = yearField(k);
+  e.name = picked.title;
+  e[yrK] = picked.year ? +picked.year : null;
+  $('#fields').innerHTML = `<p class="note">Loading details…</p>`;
+  let desc='', creator='', cover=null;
+  try{
+    if(k==='films'){
+      cover = picked.raw.poster_path ? `https://image.tmdb.org/t/p/w342${picked.raw.poster_path}` : null;
+      desc = picked.raw.overview || '';
+      if(S.cfg.tmdbKey){
+        const cr = await fetch(`https://api.themoviedb.org/3/movie/${picked.id}/credits?api_key=${encodeURIComponent(S.cfg.tmdbKey)}`);
+        if(cr.ok){ const cj = await cr.json(); const d = (cj.crew||[]).find(x=>x.job==='Director'); if(d) creator = d.name; }
+      }
+    } else if(k==='tv'){
+      cover = picked.raw.poster_path ? `https://image.tmdb.org/t/p/w342${picked.raw.poster_path}` : null;
+      desc = picked.raw.overview || '';
+      if(S.cfg.tmdbKey){
+        const dr = await fetch(`https://api.themoviedb.org/3/tv/${picked.id}?api_key=${encodeURIComponent(S.cfg.tmdbKey)}`);
+        if(dr.ok){
+          const dj = await dr.json();
+          creator = (dj.networks||[]).map(n=>n.name).slice(0,2).join('/');
+          e.genre = (dj.genres||[]).map(g=>g.name).join('/');
+          e.seasons = dj.number_of_seasons || null;
+          if(dj.status && dj.status!=='Returning Series') e.lastSeasonYear = +String(dj.last_air_date||'').slice(0,4) || null;
+        }
+      }
+    } else if(k==='games'){
+      cover = picked.raw.background_image || null;
+      e.genre = (picked.raw.genres||[]).map(g=>g.name).join('/');
+      e.console = (picked.raw.platforms||[]).map(p=>p.platform&&p.platform.name).filter(Boolean).slice(0,3).join('/');
+      if(S.cfg.rawgKey){
+        const dr = await fetch(`https://api.rawg.io/api/games/${picked.id}?key=${encodeURIComponent(S.cfg.rawgKey)}`);
+        if(dr.ok){
+          const dj = await dr.json();
+          creator = (dj.developers||[]).map(d=>d.name).join('/');
+          desc = dj.description_raw || '';
+        }
+      }
+    } else if(k==='books'){
+      cover = picked.raw.cover_i ? `https://covers.openlibrary.org/b/id/${picked.raw.cover_i}-M.jpg` : null;
+      creator = (picked.raw.author_name||[]).join('/');
+      if(picked.raw.key){
+        const wr = await fetch(`https://openlibrary.org${picked.raw.key}.json`);
+        if(wr.ok){
+          const wj = await wr.json();
+          desc = typeof wj.description==='string' ? wj.description : (wj.description && wj.description.value) || '';
+        }
+      }
+    }
+  }catch(_){}
+  if(S.addStep!=='detail' || S.editing!==e) return; // user backed out meanwhile
+  if(desc.length>420) desc = desc.slice(0,420).replace(/\s+\S*$/,'')+'…';
+  if(creator) e[crK] = creator;
+  if(cover) e.coverUrl = cover;
+  e.desc = desc || null;
+  renderAddDetail();
+}
+function renderAddDetail(){
+  const k = S.tab, c = COLLECTIONS[k], e = S.editing;
+  const crK = creatorField(k), yrK = yearField(k);
+  const dateF = (c.recentFields||[])[0];
+  const dateLbl = {dateWatched:'Date watched', datePlayed:'Date played', dateRead:'Date read'}[dateF] || 'Date';
+  const sub = [e[crK], e[yrK]].filter(Boolean).join(' · ');
+  $('#fields').innerHTML = `
+    <div class="add-preview">
+      ${e.coverUrl?`<img class="add-preview-cover" src="${esc(e.coverUrl)}" alt="">`:'<div class="add-preview-cover"></div>'}
+      <div class="add-preview-meta">
+        <div class="add-preview-title">${esc(e.name||'')}</div>
+        <div class="add-preview-sub">${esc(sub)}</div>
+      </div>
+    </div>
+    ${e.desc?`<p class="add-desc">${esc(e.desc)}</p>`:''}
+    <label class="f"><span>${dateLbl}</span><input class="in" type="date" data-k="${dateF}" value="${esc(e[dateF]||'')}"></label>
+    <div class="acts" style="margin-top:0">
+      ${e.id
+        ? `<button type="button" class="btn ghost" id="editFieldsBtn">Edit details</button>`
+        : `<button type="button" class="btn ghost" id="backToSearch">&larr; Back to search</button>`}
+    </div>`;
+  setEditChrome('detail');
+  renderQuadPicker();
 }
 function readEdit(){
   const c = COLLECTIONS[S.tab], o = {...S.editing};
@@ -1837,9 +1990,39 @@ $('#themeGrid').addEventListener('click', e=>{
   applyTheme(b.dataset.theme); toast('Theme applied');
 });
 /* ---- quadrant picker: tap or drag anywhere in the square ---- */
+function hsl2rgb(h, s, l){
+  h/=360;
+  const q = l < .5 ? l*(1+s) : l+s-l*s, p = 2*l-q;
+  const f = t=>{
+    if(t<0) t+=1; if(t>1) t-=1;
+    if(t<1/6) return p+(q-p)*6*t;
+    if(t<1/2) return q;
+    if(t<2/3) return p+(q-p)*(2/3-t)*6;
+    return p;
+  };
+  return [f(h+1/3), f(h), f(h-1/3)].map(v=>Math.round(v*255));
+}
+/* paint every pixel with that point's exact colour, once per open */
+function paintQuadCanvas(){
+  const cv = $('#quadCanvas'); if(!cv) return;
+  const N = 240; cv.width = N; cv.height = N;
+  const ctx = cv.getContext('2d');
+  const img = ctx.createImageData(N, N);
+  for(let py=0; py<N; py++){
+    const y = 100 - (py/(N-1))*200;
+    for(let px=0; px<N; px++){
+      const x = (px/(N-1))*200 - 100;
+      const [r,g,b] = quadColorRGB(x, y);
+      const o = (py*N+px)*4;
+      img.data[o]=r; img.data[o+1]=g; img.data[o+2]=b; img.data[o+3]=255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
 function renderQuadPicker(){
   $('#ratepick').innerHTML = `
     <div class="quad" id="quadArea">
+      <canvas class="quad-canvas" id="quadCanvas" aria-hidden="true"></canvas>
       <div class="ax h"></div><div class="ax v"></div>
       <span class="quad-lab top">Well made</span>
       <span class="quad-lab bottom">Poorly made</span>
@@ -1848,20 +2031,28 @@ function renderQuadPicker(){
       <div class="quad-dot" id="quadDot" style="display:none"></div>
     </div>
     <div class="quad-foot">
+      <span class="quad-chip" id="quadChip" style="display:none"></span>
       <span class="quad-read" id="quadRead"></span>
       <button type="button" class="quad-clear" id="quadClear">Clear</button>
     </div>`;
+  paintQuadCanvas();
   updateQuadUI();
 }
 function updateQuadUI(){
-  const dot = $('#quadDot'), read = $('#quadRead'), clr = $('#quadClear');
+  const dot = $('#quadDot'), read = $('#quadRead'), clr = $('#quadClear'), chip = $('#quadChip');
   const rx = S.editing.rx, ry = S.editing.ry;
   if(ry==null){
     dot.style.display = 'none';
+    chip.style.display = 'none';
     read.textContent = 'Tap anywhere on the graph to rate';
     clr.style.display = 'none';
     return;
   }
+  const col = quadColor(rx==null?0:rx, ry);
+  chip.style.display = 'block';
+  chip.classList.toggle('legacy', rx==null);
+  if(rx==null){ chip.style.background='none'; chip.style.borderColor=col; }
+  else { chip.style.background=col; chip.style.borderColor='rgba(0,0,0,.15)'; }
   dot.style.display = 'block';
   dot.classList.toggle('legacy', rx==null);
   dot.style.left = (((rx==null?0:rx)+100)/200*100)+'%';
@@ -1931,10 +2122,15 @@ $('#fields').addEventListener('input', e=>{
   onTitleInput(e);
 });
 $('#fields').addEventListener('click', e=>{
+  if(e.target.closest('#manualAddBtn')){ renderAddManual(); return; }
+  if(e.target.closest('#backToSearch')){ renderAddSearch(); return; }
+  if(e.target.closest('#editFieldsBtn')){ renderAddManual(); return; }
   const row = e.target.closest('[data-sid]'); if(!row) return;
   e.preventDefault();
   const picked = lastSuggestResults.find(r=>String(r.id)===row.dataset.sid);
-  if(picked) fillFromSuggestion(S.tab, picked);
+  if(!picked) return;
+  if(S.addStep==='search') openAddDetail(picked);
+  else fillFromSuggestion(S.tab, picked);
 });
 $('#inProgressBtn').addEventListener('click', ()=>{
   S.editing.inProgress = !S.editing.inProgress;
