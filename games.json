@@ -1,7 +1,7 @@
 {
  "schemaVersion": 1,
  "ratingScale": 10,
- "updatedAt": "2026-07-23T08:06:47.561Z",
+ "updatedAt": "2026-07-23T09:00:45.031Z",
  "items": [
   {
    "id": "g0125",
@@ -19,7 +19,7 @@
   },
   {
    "id": "g0245",
-   "rating": 9,
+   "rating": null,
    "inProgress": false,
    "name": "Nine Sols",
    "coverUrl": "https://media.rawg.io/media/games/cee/cee02d983e2e1e457caa562420f532fb.jpg",
@@ -29,7 +29,9 @@
    "console": "PS5",
    "mainStoryPct": "100",
    "datePlayed": "2026-07-21",
-   "yearReleased": 2024
+   "yearReleased": 2024,
+   "ry": null,
+   "rx": null
   },
   {
    "id": "g0001",
