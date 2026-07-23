@@ -102,23 +102,6 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
   .addbtn{height:34px;padding:0 13px}
 }
 
-/* ---------- banner ---------- */
-.banner{
-  display:flex;align-items:center;gap:10px;margin-top:6px;
-  background:var(--ink-2);border:1px solid var(--sig);border-left-width:3px;
-  border-radius:var(--r);padding:11px 12px;
-}
-.banner[hidden]{display:none}
-.banner.warn{border-color:var(--warn)}
-.btxt{flex:1;min-width:0;font-size:13px;line-height:1.45}
-.btxt b{display:block;font-size:13px;margin-bottom:1px}
-.btxt span{color:var(--mute);font-family:var(--font-body);font-size:11px}
-.bfix{
-  flex:0 0 auto;background:var(--ink);color:var(--paper);
-  border-radius:999px;padding:12px 15px;font-weight:600;font-size:13px;
-  min-height:44px;
-}
-
 /* ---------- hero ---------- */
 .hero{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:36px;margin-top:14px;max-width:100%}
 .hero-cur,.hero-recent{min-width:0}
@@ -402,10 +385,6 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 .note b{color:var(--ink)}
 .note.warn{color:var(--sig);border-color:var(--sig)}
 .note.ok{color:var(--acid);border-color:var(--acid)}
-.pushlog{font-family:var(--font-body);font-size:11px;color:var(--mute);
-  background:var(--paper);border-radius:var(--r);padding:10px;margin-top:12px;
-  white-space:pre-wrap;max-height:130px;overflow:auto;display:none}
-.pushlog.on{display:block}
 .toast{
   position:fixed;left:50%;transform:translateX(-50%) translateY(20px);
   bottom:calc(84px + var(--safe-b));z-index:60;
@@ -420,6 +399,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -437,18 +417,12 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
     </div>
     <div class="htools">
       <button class="sync" id="syncStatus" aria-label="Sync status"><span class="dot"></span><span class="txt">Local</span></button>
-      <button class="iconbtn hidden" id="saveBtn" aria-label="Save to GitHub" title="Save to GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></button>
       <button class="iconbtn" id="reloadBtn" aria-label="Reload from GitHub" title="Reload from GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>
       <button class="iconbtn" id="settingsBtn" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
       <button class="iconbtn" id="themeBtn" aria-label="Appearance" title="Appearance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
       <button class="addbtn" id="addBtn">+ Add</button>
     </div>
   </header>
-
-  <div class="banner" id="banner" hidden>
-    <div class="btxt"><b id="bTitle"></b><span id="bBody"></span></div>
-    <button class="bfix" id="bFix">Fix</button>
-  </div>
 
   <div id="list"></div>
 </div>
@@ -482,36 +456,38 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 <div class="sheet" id="setSheet" role="dialog" aria-modal="true">
   <div class="grab"></div>
   <h2>Settings</h2>
+  <p class="note" id="acctInfo">Not signed in.</p>
+  <div class="acts" style="margin-top:2px">
+    <button class="btn ghost" id="acctAuthBtn">Sign in / create account</button>
+    <button class="btn ghost" id="importJsonBtn" style="display:none">Import old JSON lists</button>
+  </div>
+  <div class="acts" style="margin-top:2px;display:none" id="signOutRow">
+    <button class="btn danger" id="signOutBtn" style="flex:1">Sign out</button>
+  </div>
   <div class="acts" style="margin-top:0">
     <button class="btn ghost" id="openThemeBtn">Appearance — themes &amp; fonts</button>
   </div>
-  <p class="note">Your token stays in this browser's storage and is sent only to <b>api.github.com</b>. It is never shown to anyone else. Clearing your browser data removes it — you'd paste it again.</p>
-  <label class="f"><span>GitHub repo</span><input class="in" id="repoIn" placeholder="maxyongg/media" autocomplete="off"></label>
-  <label class="f"><span>Branch</span><input class="in" id="branchIn" placeholder="main" autocomplete="off"></label>
-  <label class="f"><span>Personal access token</span><input class="in" id="tokIn" type="password" placeholder="github_pat_…" autocomplete="off"></label>
-  <label class="f"><span>Token expiry date — optional, for reminders</span><input class="in" id="expIn" type="date"></label>
-  <div class="acts" style="margin-top:2px">
-    <button class="btn ghost" id="testConnBtn">Test connection</button>
-  </div>
-  <p class="note" id="connHint" style="display:none"></p>
-  <p class="note">Cover images pull from TMDB (films/TV) and RAWG (games) — both free, keys stay in this browser and are sent only to their own APIs. Books use Open Library, which needs no key.</p>
-  <label class="f"><span>TMDB API key — optional, for film/TV covers</span><input class="in" id="tmdbIn" placeholder="optional" autocomplete="off"></label>
-  <label class="f"><span>RAWG API key — optional, for game covers</span><input class="in" id="rawgIn" placeholder="optional" autocomplete="off"></label>
   <div class="acts" style="margin-top:2px">
     <button class="btn ghost" id="fetchCoversBtn">Fetch missing covers</button>
   </div>
-  <p class="note">Pull the latest from your linked Letterboxd &amp; Goodreads via the repo's GitHub Action (needs a token with Actions: write).</p>
-  <div class="acts" style="margin-top:2px">
-    <button class="btn ghost" id="triggerSyncBtn">Fetch from Letterboxd / Goodreads</button>
-  </div>
   <div class="acts">
     <button class="btn ghost" id="closeSet">Close</button>
-    <button class="btn primary" id="saveSet">Save settings</button>
   </div>
-  <div class="acts" style="margin-top:10px">
-    <button class="btn danger" id="forgetBtn">Forget token</button>
+</div>
+
+<!-- account sheet -->
+<div class="sheet" id="authSheet" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <h2 id="authTitle">Sign in</h2>
+  <p class="note">Your list now lives in an account, so it works on any device and can be compared with friends' lists.</p>
+  <label class="f"><span>Username — 3–20 chars, a–z 0–9 _</span><input class="in" id="authUser" autocomplete="username"></label>
+  <label class="f"><span>Password</span><input class="in" id="authPw" type="password" autocomplete="current-password"></label>
+  <p class="note" id="authPwHint" style="display:none">No email involved — which also means no password-reset links. Keep the password somewhere safe.</p>
+  <p class="note warn" id="authErr" style="display:none"></p>
+  <div class="acts">
+    <button class="btn ghost" id="authToggle">Create account</button>
+    <button class="btn primary" id="authGo">Sign in</button>
   </div>
-  <div class="pushlog" id="pushlog"></div>
 </div>
 
 <!-- theme sheet -->
@@ -526,10 +502,13 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version">xonk v2026.07.23g</div>
+<div class="version">xonk v2026.07.24e</div>
 
 <script>
 /* ================= config ================= */
+const SUPA_URL = 'https://nboxbviajfjvjleprrkl.supabase.co';
+const SUPA_KEY = 'sb_publishable_1kcKxh_ElDWmiiUJAT_DIQ_dzxb5KrQ'; // browser-safe publishable key
+let supa = null;
 const COLLECTIONS = {
   games: {
     label:'Games', file:'games.json', scale:10, idp:'g', recentFields:['datePlayed'],
@@ -638,8 +617,8 @@ function renderThemeGrid(){
 const S = {
   view:'home', tab:'films', typeFilter:'all', q:'',
   sortKey:'date', sortDir:-1,
-  data:{}, shas:{}, dirty:new Set(), authError:null,
-  cfg:{repo:'', branch:'main', token:'', expires:'', tmdbKey:'', rawgKey:'', theme:'museum'},
+  data:{},
+  cfg:{theme:'museum'},
   editing:null, statsCat:'overview', statsFilter:null
 };
 const TYPE_LABELS = {games:'Game', tv:'TV', films:'Film', books:'Book'};
@@ -653,22 +632,8 @@ function loadCfg(){
     const c = JSON.parse(localStorage.getItem(LS+'.cfg')||'{}');
     Object.assign(S.cfg, c);
   }catch(e){}
-  if(!S.cfg.repo){
-    // sensible default from the Pages URL: user.github.io/repo/
-    const m = location.hostname.match(/^([^.]+)\.github\.io$/);
-    const p = location.pathname.split('/').filter(Boolean)[0];
-    if(m && p) S.cfg.repo = m[1]+'/'+p;
-  }
 }
 function saveCfg(){ localStorage.setItem(LS+'.cfg', JSON.stringify(S.cfg)); }
-function cacheData(){ localStorage.setItem(LS+'.data', JSON.stringify({d:S.data, dirty:[...S.dirty]})); }
-function loadCache(){
-  try{
-    const c = JSON.parse(localStorage.getItem(LS+'.data')||'null');
-    if(c && c.d){ S.data = c.d; S.dirty = new Set(c.dirty||[]); return true; }
-  }catch(e){}
-  return false;
-}
 
 /* ================= toast ================= */
 let tT;
@@ -685,49 +650,8 @@ async function loadLocal(key){
   return await r.json();
 }
 async function loadAll(){
-  const cached = loadCache();
-  await Promise.all(Object.keys(COLLECTIONS).map(async k=>{
-    if(cached && S.data[k]) return;
-    try{ S.data[k] = await loadLocal(k); }
-    catch(e){ S.data[k] = {schemaVersion:1, ratingScale:COLLECTIONS[k].scale, updatedAt:null, items:[]}; }
-  }));
+  if(S.session){ await loadFromSupa(); return; }
   render();
-  if(S.cfg.token && S.cfg.repo) await syncOnLoad();
-}
-
-/* compare local vs remote updatedAt per file; pull/push/no-op accordingly */
-async function syncOnLoad(){
-  setStatus('','syncing…');
-  let anyError = false;
-  for(const k of Object.keys(COLLECTIONS)){
-    try{
-      const g = await ghGet(COLLECTIONS[k].file);
-      if(!g){
-        // not in the repo yet — push local as the first commit
-        S.shas[k] = await ghPut(COLLECTIONS[k].file, S.data[k], null);
-        S.dirty.delete(k);
-        continue;
-      }
-      S.shas[k] = g.sha;
-      const remoteT = g.json.updatedAt ? new Date(g.json.updatedAt).getTime() : 0;
-      const localT  = S.data[k].updatedAt ? new Date(S.data[k].updatedAt).getTime() : 0;
-      if(remoteT > localT){
-        S.data[k] = g.json; S.dirty.delete(k);
-      } else if(localT > remoteT){
-        S.shas[k] = await ghPut(COLLECTIONS[k].file, S.data[k], g.sha);
-        S.dirty.delete(k);
-      }
-    }catch(e){
-      anyError = true;
-      S.authError = classifyError(e);
-    }
-  }
-  cacheData(); render(); checkToken();
-  if(anyError){
-    setStatus(S.dirty.size?'dirty':'dirty', S.authError ? 'sync error' : (S.dirty.size+' unsaved'));
-  } else {
-    setStatus(S.dirty.size?'dirty':'ok', S.dirty.size ? S.dirty.size+' unsaved' : 'synced');
-  }
 }
 
 /* ================= cover images ================= */
@@ -741,29 +665,13 @@ async function fetchCoverFor(k, item){
   const title = cleanSearchTitle(item.name);
   if(!title) return null;
   try{
-    if(k==='films'){
-      if(!S.cfg.tmdbKey) return null;
-      const yr = item.yearReleased ? `&year=${item.yearReleased}` : '';
-      const r = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${encodeURIComponent(S.cfg.tmdbKey)}&query=${encodeURIComponent(title)}${yr}`);
-      if(!r.ok) return null;
-      const j = await r.json();
-      const hit = j.results && j.results[0];
-      return (hit && hit.poster_path) ? `https://image.tmdb.org/t/p/w342${hit.poster_path}` : null;
-    }
-    if(k==='tv'){
-      if(!S.cfg.tmdbKey) return null;
-      const yr = item.firstSeasonYear ? `&first_air_date_year=${item.firstSeasonYear}` : '';
-      const r = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${encodeURIComponent(S.cfg.tmdbKey)}&query=${encodeURIComponent(title)}${yr}`);
-      if(!r.ok) return null;
-      const j = await r.json();
+    if(k==='films' || k==='tv'){
+      const j = await mediaApi({action:'search', kind:k, q:title});
       const hit = j.results && j.results[0];
       return (hit && hit.poster_path) ? `https://image.tmdb.org/t/p/w342${hit.poster_path}` : null;
     }
     if(k==='games'){
-      if(!S.cfg.rawgKey) return null;
-      const r = await fetch(`https://api.rawg.io/api/games?key=${encodeURIComponent(S.cfg.rawgKey)}&search=${encodeURIComponent(title)}&page_size=1`);
-      if(!r.ok) return null;
-      const j = await r.json();
+      const j = await mediaApi({action:'search', kind:k, q:title});
       const hit = j.results && j.results[0];
       return (hit && hit.background_image) ? hit.background_image : null;
     }
@@ -786,33 +694,31 @@ function coverImgHTML(i){
 
 /* ---- title autocomplete: type a title, pick a match, autofill the rest ---- */
 let suggestTimer = null, suggestSeq = 0, lastSuggestResults = [];
+/* all TMDB/RAWG traffic goes through the media-search edge function,
+   so the API keys live server-side and users never need their own */
+async function mediaApi(payload){
+  const r = await supa.functions.invoke('media-search', {body: payload});
+  if(r.error) throw r.error;
+  return r.data;
+}
 async function searchSuggestions(k, q){
   try{
     if(k==='films'){
-      if(!S.cfg.tmdbKey) return [];
-      const r = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${encodeURIComponent(S.cfg.tmdbKey)}&query=${encodeURIComponent(q)}`);
-      if(!r.ok) return [];
-      const j = await r.json();
+      const j = await mediaApi({action:'search', kind:k, q});
       return (j.results||[]).slice(0,6).map(m=>({
         id:m.id, title:m.title, year:(m.release_date||'').slice(0,4),
         thumb:m.poster_path?`https://image.tmdb.org/t/p/w92${m.poster_path}`:null, raw:m
       }));
     }
     if(k==='tv'){
-      if(!S.cfg.tmdbKey) return [];
-      const r = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${encodeURIComponent(S.cfg.tmdbKey)}&query=${encodeURIComponent(q)}`);
-      if(!r.ok) return [];
-      const j = await r.json();
+      const j = await mediaApi({action:'search', kind:k, q});
       return (j.results||[]).slice(0,6).map(t=>({
         id:t.id, title:t.name, year:(t.first_air_date||'').slice(0,4),
         thumb:t.poster_path?`https://image.tmdb.org/t/p/w92${t.poster_path}`:null, raw:t
       }));
     }
     if(k==='games'){
-      if(!S.cfg.rawgKey) return [];
-      const r = await fetch(`https://api.rawg.io/api/games?key=${encodeURIComponent(S.cfg.rawgKey)}&search=${encodeURIComponent(q)}&page_size=6`);
-      if(!r.ok) return [];
-      const j = await r.json();
+      const j = await mediaApi({action:'search', kind:k, q});
       return (j.results||[]).map(g=>({
         id:g.id, title:g.name, year:(g.released||'').slice(0,4),
         thumb:g.background_image||null, raw:g
@@ -863,30 +769,20 @@ async function fillFromSuggestion(k, picked){
   try{
     if(k==='films'){
       setField('yearReleased', picked.year);
-      if(S.cfg.tmdbKey){
-        const cr = await fetch(`https://api.themoviedb.org/3/movie/${picked.id}/credits?api_key=${encodeURIComponent(S.cfg.tmdbKey)}`);
-        if(cr.ok){
-          const cj = await cr.json();
-          const dir = (cj.crew||[]).find(c=>c.job==='Director');
-          if(dir) setField('director', dir.name);
-        }
-      }
+      const cj = await mediaApi({action:'detail', kind:'films', id:picked.id});
+      const dir = (cj.crew||[]).find(c=>c.job==='Director');
+      if(dir) setField('director', dir.name);
       if(picked.raw.poster_path){
         const url = `https://image.tmdb.org/t/p/w342${picked.raw.poster_path}`;
         setField('coverUrl', url); updateCoverPreview(url);
       }
     } else if(k==='tv'){
-      if(S.cfg.tmdbKey){
-        const dr = await fetch(`https://api.themoviedb.org/3/tv/${picked.id}?api_key=${encodeURIComponent(S.cfg.tmdbKey)}`);
-        if(dr.ok){
-          const dj = await dr.json();
-          setField('genre', (dj.genres||[]).map(g=>g.name).join('/'));
-          setField('network', (dj.networks||[]).map(n=>n.name).slice(0,2).join('/'));
-          setField('seasons', dj.number_of_seasons||'');
-          setField('firstSeasonYear', (dj.first_air_date||'').slice(0,4));
-          if(dj.status && dj.status!=='Returning Series') setField('lastSeasonYear', (dj.last_air_date||'').slice(0,4));
-        }
-      }
+      const dj = await mediaApi({action:'detail', kind:'tv', id:picked.id});
+      setField('genre', (dj.genres||[]).map(g=>g.name).join('/'));
+      setField('network', (dj.networks||[]).map(n=>n.name).slice(0,2).join('/'));
+      setField('seasons', dj.number_of_seasons||'');
+      setField('firstSeasonYear', (dj.first_air_date||'').slice(0,4));
+      if(dj.status && dj.status!=='Returning Series') setField('lastSeasonYear', (dj.last_air_date||'').slice(0,4));
       if(picked.raw.poster_path){
         const url = `https://image.tmdb.org/t/p/w342${picked.raw.poster_path}`;
         setField('coverUrl', url); updateCoverPreview(url);
@@ -895,14 +791,9 @@ async function fillFromSuggestion(k, picked){
       setField('yearReleased', picked.year);
       setField('genre', (picked.raw.genres||[]).map(g=>g.name).join('/'));
       setField('console', (picked.raw.platforms||[]).map(p=>p.platform&&p.platform.name).filter(Boolean).slice(0,3).join('/'));
-      if(S.cfg.rawgKey){
-        const dr = await fetch(`https://api.rawg.io/api/games/${picked.id}?key=${encodeURIComponent(S.cfg.rawgKey)}`);
-        if(dr.ok){
-          const dj = await dr.json();
-          const devs = (dj.developers||[]).map(d=>d.name).join('/');
-          if(devs) setField('developer', devs);
-        }
-      }
+      const dj = await mediaApi({action:'detail', kind:'games', id:picked.id});
+      const devs = (dj.developers||[]).map(d=>d.name).join('/');
+      if(devs) setField('developer', devs);
       if(picked.raw.background_image){
         setField('coverUrl', picked.raw.background_image); updateCoverPreview(picked.raw.background_image);
       }
@@ -919,256 +810,35 @@ async function fillFromSuggestion(k, picked){
     toast('Filled what I could — some details failed to load');
   }
 }
-async function fetchMissingCovers(){
-  const missingKeys = [];
-  if(!S.cfg.tmdbKey) missingKeys.push('TMDB (films/TV)');
-  if(!S.cfg.rawgKey) missingKeys.push('RAWG (games)');
-  const log = $('#pushlog'); log.classList.add('on');
-  log.textContent = 'Fetching covers…\n';
-  $('#fetchCoversBtn').textContent = 'Fetching…';
-  let checked=0, filled=0;
-  for(const k of Object.keys(COLLECTIONS)){
-    const items = (S.data[k]&&S.data[k].items)||[];
-    let touched = false;
-    for(const item of items){
-      if(item.coverUrl) continue;
-      const url = await fetchCoverFor(k, item);
-      checked++;
-      if(url){ item.coverUrl = url; filled++; touched = true; }
-      if(checked % 15 === 0){ log.textContent += `${checked} checked, ${filled} found…\n`; log.scrollTop = log.scrollHeight; }
-      await new Promise(res=>setTimeout(res, 200));
-    }
-    if(touched) markDirty(k);
-  }
-  cacheData(); render();
-  log.textContent += `Done — ${filled} covers found.\n`;
-  if(missingKeys.length) log.textContent += `Skipped (no key set): ${missingKeys.join(', ')}\n`;
-  $('#fetchCoversBtn').textContent = 'Fetch missing covers';
-  toast(filled ? `${filled} covers found` : 'No new covers found');
-}
 function updateCoverPreview(url){
   const img = $('#coverPreview');
   if(url){ img.src = url; img.style.display='block'; }
   else { img.style.display='none'; img.removeAttribute('src'); }
 }
-
-function ghHeaders(){
-  return {
-    'Authorization':'Bearer '+S.cfg.token,
-    'Accept':'application/vnd.github+json',
-    'X-GitHub-Api-Version':'2022-11-28'
-  };
-}
-function b64(str){
-  return btoa(String.fromCharCode(...new TextEncoder().encode(str)));
-}
-function unb64(str){
-  const bin = atob(str.replace(/\s/g,''));
-  return new TextDecoder().decode(Uint8Array.from(bin, c=>c.charCodeAt(0)));
-}
-async function ghGet(file){
-  const u = `https://api.github.com/repos/${S.cfg.repo}/contents/${file}?ref=${encodeURIComponent(S.cfg.branch||'main')}`;
-  const r = await fetch(u, {headers: ghHeaders()});
-  if(r.status===404) return null;
-  if(!r.ok){ const e = new Error(`${file}: ${r.status} ${(await r.json().catch(()=>({}))).message||''}`); e.status = r.status; throw e; }
-  const j = await r.json();
-  return {sha:j.sha, json:JSON.parse(unb64(j.content))};
-}
-async function ghPut(file, obj, sha){
-  const u = `https://api.github.com/repos/${S.cfg.repo}/contents/${file}`;
-  const body = {
-    message:`ledger: update ${file}`,
-    content: b64(JSON.stringify(obj,null,1)),
-    branch: S.cfg.branch||'main'
-  };
-  if(sha) body.sha = sha;
-  const r = await fetch(u, {method:'PUT', headers:{...ghHeaders(),'Content-Type':'application/json'}, body: JSON.stringify(body)});
-  const j = await r.json().catch(()=>({}));
-  if(!r.ok){ const e = new Error(`${file}: ${r.status} ${j.message||''}`); e.status = r.status; throw e; }
-  return j.content.sha;
-}
-
-/* ---- token health ---- */
-function bannerFor(kind, extra){
-  const B = $('#banner');
-  if(!kind){ B.hidden = true; return; }
-  const M = {
-    notoken: ['Not connected to GitHub', 'Edits save on this phone only. Add a token to sync.', 'sig', 'Set up'],
-    expired: ['Token expired or revoked', 'GitHub rejected it (401). Generate a new one to save again.', 'sig', 'Replace'],
-    denied:  ['Token lacks write access', 'Needs Contents: Read and write on this repo (403).', 'sig', 'Fix'],
-    norepo:  ['Repo not found', 'Check the repo name and that the token can see it (404).', 'sig', 'Fix'],
-    soon:    ['Token expires soon', extra||'', 'warn', 'Renew'],
-    gone:    ['Token has expired', 'Generate a new one to start saving again.', 'sig', 'Replace']
-  }[kind];
-  if(!M) { B.hidden = true; return; }
-  $('#bTitle').textContent = M[0];
-  $('#bBody').textContent  = M[1];
-  B.className = 'banner' + (M[2]==='warn' ? ' warn' : '');
-  $('#bFix').textContent = M[3];
-  B.hidden = false;
-}
-function checkToken(){
-  if(S.authError){ bannerFor(S.authError); return; }
-  if(!S.cfg.token){ bannerFor('notoken'); return; }
-  if(S.cfg.expires){
-    const days = Math.ceil((new Date(S.cfg.expires+'T23:59:59') - Date.now())/86400000);
-    if(days < 0){ bannerFor('gone'); return; }
-    if(days <= 14){
-      bannerFor('soon', days===0 ? 'Expires today. Generate a new one to keep syncing.'
-        : `Expires in ${days} day${days===1?'':'s'}. Generate a new one to keep syncing.`);
-      return;
+async function fetchMissingCovers(){
+  if(!S.session){ toast('Sign in first'); return; }
+  const btn = $('#fetchCoversBtn'); btn.textContent='Fetching…'; btn.disabled=true;
+  let filled = 0;
+  for(const k of Object.keys(COLLECTIONS)){
+    for(const item of (S.data[k]&&S.data[k].items)||[]){
+      if(item.coverUrl) continue;
+      const url = await fetchCoverFor(k, item);
+      if(url){
+        const r = await supa.from('items').update({cover_url:url}).eq('id', item.id);
+        if(!r.error){ item.coverUrl = url; filled++; }
+      }
+      await new Promise(res=>setTimeout(res, 200));
     }
   }
-  bannerFor(null);
+  render();
+  btn.textContent='Fetch missing covers'; btn.disabled=false;
+  toast(filled+' covers found');
 }
-function classifyError(e){
-  if(e && e.status===401) return 'expired';
-  if(e && e.status===403) return 'denied';
-  if(e && e.status===404) return 'norepo';
-  return null;
-}
-
-async function pull(){
-  if(!S.cfg.token || !S.cfg.repo) return toast('Add repo + token first');
-  const log=$('#pushlog'); log.classList.add('on'); log.textContent='Reading…\n';
-  try{
-    for(const k of Object.keys(COLLECTIONS)){
-      const g = await ghGet(COLLECTIONS[k].file);
-      if(g){ S.data[k]=g.json; S.shas[k]=g.sha; log.textContent+=`${COLLECTIONS[k].file} ✓ ${g.json.items.length} items\n`; }
-      else log.textContent+=`${COLLECTIONS[k].file} — not in repo yet\n`;
-    }
-    S.dirty.clear(); S.authError=null; cacheData(); render();
-    setStatus('ok','synced'); toast('Reloaded from GitHub'); checkToken();
-  }catch(e){
-    log.textContent+='ERROR '+e.message+'\n'; setStatus('dirty','error');
-    S.authError = classifyError(e); checkToken();
-  }
-}
-
-async function triggerSync(){
-  if(!S.cfg.token || !S.cfg.repo){ openSet(); return toast('Add repo + token first'); }
-  toast('Triggering fetch…');
-  try{
-    const u = `https://api.github.com/repos/${S.cfg.repo}/actions/workflows/sync-media.yml/dispatches`;
-    const r = await fetch(u, {
-      method:'POST',
-      headers:{...ghHeaders(),'Content-Type':'application/json'},
-      body: JSON.stringify({ref: S.cfg.branch||'main'})
-    });
-    if(r.status===204){
-      toast('Fetch started — check back in a minute');
-    } else if(r.status===404){
-      toast('Workflow not found — add sync-media.yml first');
-    } else if(r.status===401 || r.status===403){
-      toast('Token needs Actions: write permission');
-    } else {
-      const j = await r.json().catch(()=>({}));
-      toast('Trigger failed: '+(j.message||r.status));
-    }
-  }catch(e){
-    toast('Trigger failed: '+e.message);
-  }
-}
-
-async function push(){
-  if(!S.cfg.token || !S.cfg.repo){ openSet(); return toast('Add repo + token first'); }
-  if(!S.dirty.size) return toast('Nothing to save');
-  const log=$('#pushlog'); log.classList.add('on'); log.textContent='Saving…\n';
-  setStatus('','saving…');
-  try{
-    for(const k of [...S.dirty]){
-      let sha = S.shas[k];
-      if(!sha){ const g = await ghGet(COLLECTIONS[k].file); sha = g && g.sha; }
-      S.shas[k] = await ghPut(COLLECTIONS[k].file, S.data[k], sha);
-      S.dirty.delete(k);
-      log.textContent += `${COLLECTIONS[k].file} committed\n`;
-    }
-    cacheData(); S.authError=null; setStatus('ok','saved'); toast('Saved to GitHub'); render(); checkToken();
-  }catch(e){
-    log.textContent += 'ERROR '+e.message+'\n';
-    setStatus('dirty', S.dirty.size+' unsaved');
-    S.authError = classifyError(e); checkToken();
-    toast(S.authError ? 'Token problem — see banner' : 'Save failed — see settings');
-  }
-}
-function setStatus(cls,txt){
-  const el=$('#syncStatus'); if(!el) return;
-  el.className = 'sync '+(cls==='ok'?'ok':cls==='dirty'?'dirty':'');
+/* status chip = account state */
+function setStatus(cls, txt){
+  const el = $('#syncStatus'); if(!el) return;
+  el.className = 'sync ' + (cls==='ok' ? 'ok' : '');
   const t = el.querySelector('.txt'); if(t) t.textContent = txt;
-  const sb=$('#saveBtn'); if(sb) sb.classList.toggle('hidden', !S.dirty.size);
-}
-function markDirty(k){
-  S.data[k].updatedAt = new Date().toISOString();
-  S.dirty.add(k); cacheData();
-  setStatus('dirty', S.dirty.size+' unsaved');
-  const sb=$('#saveBtn'); if(sb) sb.classList.remove('hidden');
-  if(S.cfg.token && S.cfg.repo) syncOne(k);
-}
-
-/* auto-push a single file right after an edit; falls back silently to the
-   dirty-flag + manual pushBtn if it fails (e.g. offline, bad token) */
-async function syncOne(k){
-  try{
-    let sha = S.shas[k];
-    if(!sha){ const g = await ghGet(COLLECTIONS[k].file); sha = g && g.sha; }
-    S.shas[k] = await ghPut(COLLECTIONS[k].file, S.data[k], sha);
-    S.dirty.delete(k);
-    cacheData(); S.authError=null;
-    setStatus(S.dirty.size?'dirty':'ok', S.dirty.size ? S.dirty.size+' unsaved' : 'saved');
-    render(); checkToken();
-  }catch(e){
-    S.authError = classifyError(e); checkToken();
-    setStatus('dirty', S.dirty.size+' unsaved');
-  }
-}
-
-/* explicit pre-save check, using the values currently typed into the settings
-   form (not yet saved) — reports success/failure inline before committing */
-async function testConnection(){
-  const repo = $('#repoIn').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,'');
-  const branch = $('#branchIn').value.trim()||'main';
-  const token = $('#tokIn').value.trim();
-  const hint = $('#connHint');
-  hint.style.display='block'; hint.className='note'; hint.textContent='Checking…';
-  if(!repo || !token){
-    hint.className='note warn'; hint.textContent='Enter a repo and token first.';
-    return;
-  }
-  try{
-    const r = await fetch(`https://api.github.com/repos/${repo}`, {
-      headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}
-    });
-    if(r.status===401){ hint.className='note warn'; hint.textContent='Token is invalid or expired (401).'; return; }
-    if(r.status===404){ hint.className='note warn'; hint.textContent='Repo not found, or token can\'t see it (404).'; return; }
-    if(!r.ok){ hint.className='note warn'; hint.textContent=`GitHub said ${r.status}.`; return; }
-    const j = await r.json();
-    if(j.permissions && j.permissions.push===false){
-      hint.className='note warn'; hint.textContent='Connected, but token lacks write access to this repo.'; return;
-    }
-    const b = await fetch(`https://api.github.com/repos/${repo}/branches/${encodeURIComponent(branch)}`, {
-      headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}
-    });
-    if(!b.ok){ hint.className='note warn'; hint.textContent=`Connected with write access, but branch "${branch}" wasn't found.`; return; }
-    hint.className='note ok'; hint.textContent='✓ Connected — repo found, write access confirmed.';
-  }catch(e){
-    hint.className='note warn'; hint.textContent='Couldn\'t reach GitHub: '+e.message;
-  }
-}
-
-/* silent check: is the stored token still good? */
-async function verifyToken(){
-  if(!S.cfg.token || !S.cfg.repo){ checkToken(); return; }
-  try{
-    const r = await fetch(`https://api.github.com/repos/${S.cfg.repo}`, {headers: ghHeaders()});
-    if(r.status===401){ S.authError='expired'; checkToken(); return; }
-    if(r.status===404){ S.authError='norepo'; checkToken(); return; }
-    if(r.ok){
-      const j = await r.json();
-      if(j.permissions && j.permissions.push === false){ S.authError='denied'; checkToken(); return; }
-      S.authError = null;
-    }
-    checkToken();
-  }catch(e){ checkToken(); }
 }
 
 /* ================= render ================= */
@@ -1672,9 +1342,24 @@ function renderStatsTab(){
 }
 
 function render(){
+  if(!S.session){ renderWelcome(); return; }
   setNavActive();
   if(S.view==='stats') renderStatsTab();
   else renderHome();
+}
+function renderWelcome(){
+  setNavActive();
+  $('#list').innerHTML = `
+    <div class="home-hero" style="padding:64px 0 8px">
+      <div class="home-hero-num" style="font-size:38px">Rate both halves.</div>
+      <div class="home-hero-label" style="margin-top:12px;text-transform:none;font-size:13px;letter-spacing:0;line-height:1.6">
+        How much you <b>enjoyed</b> it &times; how <b>good</b> it was.<br>Every rating is a point on a map; every point is a colour.
+      </div>
+    </div>
+    <div class="acts" style="max-width:340px;margin:22px auto 0">
+      <button class="btn ghost" id="welcomeUp">Create account</button>
+      <button class="btn primary" id="welcomeIn">Sign in</button>
+    </div>`;
 }
 function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 
@@ -1754,12 +1439,9 @@ function openEdit(item){
 function renderAddSearch(){
   const c = COLLECTIONS[S.tab];
   S.addStep = 'search';
-  const needsKey = (S.tab==='films'||S.tab==='tv') ? (S.cfg.tmdbKey?null:'TMDB')
-                 : S.tab==='games' ? (S.cfg.rawgKey?null:'RAWG') : null;
   $('#fields').innerHTML = `
     <label class="f"><span>Search</span><input class="in" id="addSearch" placeholder="Start typing a title…" autocomplete="off"></label>
     <div class="suggest-list" id="titleSuggest"></div>
-    ${needsKey?`<p class="note warn">Searching ${c.label.toLowerCase()} needs a ${needsKey} API key — add one in Settings, or enter the item manually.</p>`:''}
     <div class="acts" style="margin-top:6px">
       <button type="button" class="btn ghost" id="manualAddBtn">Can't find it? Enter manually</button>
     </div>`;
@@ -1790,35 +1472,23 @@ async function openAddDetail(picked){
     if(k==='films'){
       cover = picked.raw.poster_path ? `https://image.tmdb.org/t/p/w342${picked.raw.poster_path}` : null;
       desc = picked.raw.overview || '';
-      if(S.cfg.tmdbKey){
-        const cr = await fetch(`https://api.themoviedb.org/3/movie/${picked.id}/credits?api_key=${encodeURIComponent(S.cfg.tmdbKey)}`);
-        if(cr.ok){ const cj = await cr.json(); const d = (cj.crew||[]).find(x=>x.job==='Director'); if(d) creator = d.name; }
-      }
+      const cj = await mediaApi({action:'detail', kind:k, id:picked.id});
+      const d = (cj.crew||[]).find(x=>x.job==='Director'); if(d) creator = d.name;
     } else if(k==='tv'){
       cover = picked.raw.poster_path ? `https://image.tmdb.org/t/p/w342${picked.raw.poster_path}` : null;
       desc = picked.raw.overview || '';
-      if(S.cfg.tmdbKey){
-        const dr = await fetch(`https://api.themoviedb.org/3/tv/${picked.id}?api_key=${encodeURIComponent(S.cfg.tmdbKey)}`);
-        if(dr.ok){
-          const dj = await dr.json();
-          creator = (dj.networks||[]).map(n=>n.name).slice(0,2).join('/');
-          e.genre = (dj.genres||[]).map(g=>g.name).join('/');
-          e.seasons = dj.number_of_seasons || null;
-          if(dj.status && dj.status!=='Returning Series') e.lastSeasonYear = +String(dj.last_air_date||'').slice(0,4) || null;
-        }
-      }
+      const dj = await mediaApi({action:'detail', kind:k, id:picked.id});
+      creator = (dj.networks||[]).map(n=>n.name).slice(0,2).join('/');
+      e.genre = (dj.genres||[]).map(g=>g.name).join('/');
+      e.seasons = dj.number_of_seasons || null;
+      if(dj.status && dj.status!=='Returning Series') e.lastSeasonYear = +String(dj.last_air_date||'').slice(0,4) || null;
     } else if(k==='games'){
       cover = picked.raw.background_image || null;
       e.genre = (picked.raw.genres||[]).map(g=>g.name).join('/');
       e.console = (picked.raw.platforms||[]).map(p=>p.platform&&p.platform.name).filter(Boolean).slice(0,3).join('/');
-      if(S.cfg.rawgKey){
-        const dr = await fetch(`https://api.rawg.io/api/games/${picked.id}?key=${encodeURIComponent(S.cfg.rawgKey)}`);
-        if(dr.ok){
-          const dj = await dr.json();
-          creator = (dj.developers||[]).map(d=>d.name).join('/');
-          desc = dj.description_raw || '';
-        }
-      }
+      const dj = await mediaApi({action:'detail', kind:k, id:picked.id});
+      creator = (dj.developers||[]).map(d=>d.name).join('/');
+      desc = dj.description_raw || '';
     } else if(k==='books'){
       cover = picked.raw.cover_i ? `https://covers.openlibrary.org/b/id/${picked.raw.cover_i}-M.jpg` : null;
       creator = (picked.raw.author_name||[]).join('/');
@@ -1872,27 +1542,33 @@ function readEdit(){
   });
   return o;
 }
-function saveEdit(){
-  const c = COLLECTIONS[S.tab], o = readEdit();
+async function saveEdit(){
+  const o = readEdit();
   if(!o.name){ toast('A title is required'); return; }
-  const arr = S.data[S.tab].items;
-  if(o.id){
-    const ix = arr.findIndex(x=>x.id===o.id);
-    arr[ix] = o;
-  } else {
-    let n=1; const used=new Set(arr.map(x=>x.id));
-    while(used.has(c.idp+String(n).padStart(4,'0'))) n++;
-    o.id = c.idp+String(n).padStart(4,'0');
-    arr.unshift(o);
-  }
-  markDirty(S.tab); closeSheets(); render();
-  toast(o.id ? 'Saved' : 'Added');
+  if(!S.session){ toast('Sign in to save'); openAuth(); return; }
+  const row = itemToRow(S.tab, o);
+  try{
+    const res = o.id
+      ? await supa.from('items').update(row).eq('id', o.id).select().single()
+      : await supa.from('items').insert(row).select().single();
+    if(res.error) throw res.error;
+    const it = rowToItem(res.data);
+    const arr = S.data[S.tab].items;
+    const ix = arr.findIndex(x=>x.id===it.id);
+    if(ix>=0) arr[ix]=it; else arr.unshift(it);
+    closeSheets(); render();
+    toast(o.id ? 'Saved' : 'Added');
+  }catch(err){ toast('Save failed: '+err.message); }
 }
-function delEdit(){
+async function delEdit(){
   if(!S.editing.id) return;
   if(!confirm('Delete "'+S.editing.name+'"? This removes it from the list.')) return;
-  S.data[S.tab].items = S.data[S.tab].items.filter(x=>x.id!==S.editing.id);
-  markDirty(S.tab); closeSheets(); render(); toast('Deleted');
+  try{
+    const res = await supa.from('items').delete().eq('id', S.editing.id);
+    if(res.error) throw res.error;
+    S.data[S.tab].items = S.data[S.tab].items.filter(x=>x.id!==S.editing.id);
+    closeSheets(); render(); toast('Deleted');
+  }catch(err){ toast('Delete failed: '+err.message); }
 }
 
 /* ================= sheets ================= */
@@ -1902,13 +1578,7 @@ function closeSheets(){
   document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));
 }
 function openSet(){
-  $('#repoIn').value = S.cfg.repo||'';
-  $('#branchIn').value = S.cfg.branch||'main';
-  $('#tokIn').value = S.cfg.token||'';
-  $('#expIn').value = S.cfg.expires||'';
-  $('#tmdbIn').value = S.cfg.tmdbKey||'';
-  $('#rawgIn').value = S.cfg.rawgKey||'';
-  $('#connHint').style.display='none';
+  renderAcct();
   openSheet('#setSheet');
 }
 
@@ -1918,10 +1588,13 @@ function openItem(k, id){
   if(!item) return;
   S.tab = k; openEdit(item);
 }
-function logFinished(k, id){
+async function logFinished(k, id){
   const it = (S.data[k]&&S.data[k].items||[]).find(x=>x.id===id);
   if(!it) return;
-  it.inProgress = false; markDirty(k); render(); toast('Logged as finished');
+  it.inProgress = false; render();
+  const res = await supa.from('items').update({in_progress:false}).eq('id', id);
+  if(res.error) toast('Update failed: '+res.error.message);
+  else toast('Logged as finished');
 }
 $('#nav').addEventListener('click', e=>{
   const b = e.target.closest('.navlink[data-view]'); if(!b) return;
@@ -1934,6 +1607,8 @@ $('#q').addEventListener('input', e=>{
   render();
 });
 $('#list').addEventListener('click', e=>{
+  if(e.target.closest('#welcomeIn')){ S.authMode='in'; openAuth(); return; }
+  if(e.target.closest('#welcomeUp')){ S.authMode='up'; openAuth(); return; }
   const fin = e.target.closest('[data-finish]');
   if(fin){ e.stopPropagation(); const [k,id]=fin.dataset.finish.split(':'); logFinished(k,id); return; }
   const qa = e.target.closest('[data-quick-add]');
@@ -1967,10 +1642,9 @@ $('#addBtn').addEventListener('click', ()=>{
   S.tab = (S.typeFilter!=='all') ? S.typeFilter : 'films';
   openEdit(null);
 });
-$('#saveBtn').addEventListener('click', push);
-$('#reloadBtn').addEventListener('click', pull);
+$('#reloadBtn').addEventListener('click', ()=>{ if(S.session) loadFromSupa().then(()=>toast('Reloaded')); });
 $('#themeBtn').addEventListener('click', ()=>{ renderThemeGrid(); openSheet('#themeSheet'); });
-$('#syncStatus').addEventListener('click', ()=>{ S.dirty.size ? push() : pull(); });
+$('#syncStatus').addEventListener('click', ()=>{ S.session ? openSet() : openAuth(); });
 $('#typePick').addEventListener('click', e=>{
   const b = e.target.closest('[data-addtype]'); if(!b) return;
   S.tab = b.dataset.addtype; openEdit(null);
@@ -2090,17 +1764,6 @@ $('#ratepick').addEventListener('click', e=>{
     updateQuadUI();
   }
 });
-$('#bFix').addEventListener('click', openSet);
-$('#testConnBtn').addEventListener('click', testConnection);
-$('#saveSet').addEventListener('click', ()=>{
-  S.cfg.repo = $('#repoIn').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,'');
-  S.cfg.branch = $('#branchIn').value.trim()||'main';
-  S.cfg.token = $('#tokIn').value.trim();
-  S.cfg.expires = $('#expIn').value || '';
-  S.cfg.tmdbKey = $('#tmdbIn').value.trim();
-  S.cfg.rawgKey = $('#rawgIn').value.trim();
-  saveCfg(); S.authError=null; toast('Settings saved'); closeSheets(); verifyToken();
-});
 $('#fetchCoversBtn').addEventListener('click', fetchMissingCovers);
 $('#fetchCoverBtn').addEventListener('click', async ()=>{
   const draft = readEdit();
@@ -2136,23 +1799,166 @@ $('#inProgressBtn').addEventListener('click', ()=>{
   S.editing.inProgress = !S.editing.inProgress;
   $('#inProgressBtn').setAttribute('aria-pressed', S.editing.inProgress ? 'true' : 'false');
 });
-$('#triggerSyncBtn').addEventListener('click', triggerSync);
-$('#forgetBtn').addEventListener('click', ()=>{
-  S.cfg.token=''; $('#tokIn').value=''; saveCfg(); S.authError=null;
-  toast('Token removed from this browser'); checkToken();
-});
-window.addEventListener('beforeunload', e=>{
-  if(S.dirty.size){ e.preventDefault(); e.returnValue=''; }
-});
+
+/* ================= accounts (supabase) ================= */
+/* item <-> row mapping: the DB flattens per-category fields into
+   creator / year / date_logged; anything else rides in extra jsonb */
+function rowToItem(r){
+  const k = r.kind, ex = r.extra || {};
+  const it = {...ex, id:r.id, name:r.name, coverUrl:r.cover_url||null,
+    rx:r.rx, ry:r.ry, desc:r.summary||null, genre:r.genre||null, inProgress:!!r.in_progress};
+  it[creatorField(k)] = r.creator || null;
+  it[yearField(k)] = r.year || null;
+  const dateF = (COLLECTIONS[k].recentFields||[])[0];
+  if(dateF) it[dateF] = r.date_logged || null;
+  return it;
+}
+function itemToRow(k, o){
+  const dateF = (COLLECTIONS[k].recentFields||[])[0];
+  const known = new Set(['id','name','coverUrl','rx','ry','desc','genre','inProgress','rating',
+    creatorField(k), yearField(k), dateF]);
+  const extra = {};
+  Object.keys(o).forEach(key=>{ if(!known.has(key) && o[key]!=null) extra[key]=o[key]; });
+  const y = +o[yearField(k)];
+  const clamp = v => v==null ? null : Math.max(-100, Math.min(100, Math.round(v)));
+  return {
+    user_id: S.session.user.id, kind: k,
+    name: o.name, cover_url: o.coverUrl||null,
+    creator: o[creatorField(k)]||null,
+    year: (Number.isFinite(y) && y) ? Math.round(y) : null,
+    date_logged: o[dateF]||null,
+    rx: clamp(o.rx), ry: clamp(o.ry),
+    summary: o.desc||null, genre: o.genre||null,
+    in_progress: !!o.inProgress, extra
+  };
+}
+async function loadFromSupa(){
+  const res = await supa.from('items').select('*')
+    .eq('user_id', S.session.user.id)
+    .order('created_at', {ascending:false});
+  if(res.error){ toast('Load failed: '+res.error.message); return; }
+  Object.keys(COLLECTIONS).forEach(k=>{ S.data[k] = {items:[]}; });
+  res.data.forEach(r=>{ if(S.data[r.kind]) S.data[r.kind].items.push(rowToItem(r)); });
+  render();
+}
+/* one-time migration of the old repo JSON files into this account */
+async function importLocalJson(){
+  if(!S.session) return;
+  if(!confirm('Import films/games/tv/books JSON from the repo into your account? Running this twice creates duplicates.')) return;
+  const btn = $('#importJsonBtn'); btn.textContent='Importing…'; btn.disabled=true;
+  try{
+    let total = 0;
+    for(const k of Object.keys(COLLECTIONS)){
+      let j; try{ j = await loadLocal(k); }catch(e){ continue; }
+      const sc = COLLECTIONS[k].scale;
+      const rows = (j.items||[]).map(it=>{
+        const o = {...it};
+        if(o.ry==null && o.rating!=null){ o.ry = Math.round((o.rating/sc)*200-100); o.rx = null; }
+        delete o.id;
+        return itemToRow(k, o);
+      });
+      for(let i=0;i<rows.length;i+=200){
+        const r = await supa.from('items').insert(rows.slice(i,i+200));
+        if(r.error) throw r.error;
+      }
+      total += rows.length;
+    }
+    toast('Imported '+total+' items');
+    await loadFromSupa();
+  }catch(err){ toast('Import failed: '+err.message); }
+  btn.textContent='Import old JSON lists'; btn.disabled=false;
+}
+/* ---- auth ---- */
+function usernameOf(session){
+  if(!session) return '';
+  return (session.user.user_metadata && session.user.user_metadata.username)
+    || String(session.user.email||'').split('@')[0];
+}
+function renderAcct(){
+  const info = $('#acctInfo');
+  if(S.session){
+    info.innerHTML = 'Signed in as <b>'+esc(usernameOf(S.session))+'</b>';
+    $('#acctAuthBtn').style.display='none';
+    $('#importJsonBtn').style.display='block';
+    $('#signOutRow').style.display='flex';
+  } else {
+    info.textContent = 'Not signed in — the list needs an account now.';
+    $('#acctAuthBtn').style.display='block';
+    $('#importJsonBtn').style.display='none';
+    $('#signOutRow').style.display='none';
+  }
+}
+function openAuth(){ setAuthMode(S.authMode||'in'); openSheet('#authSheet'); }
+function setAuthMode(m){
+  S.authMode = m;
+  $('#authPwHint').style.display = m==='up' ? 'block' : 'none';
+  $('#authTitle').textContent = m==='up' ? 'Create account' : 'Sign in';
+  $('#authGo').textContent = m==='up' ? 'Create account' : 'Sign in';
+  $('#authToggle').textContent = m==='up' ? 'I have an account' : 'Create account';
+  $('#authErr').style.display='none';
+}
+/* username-only accounts: supabase still wants an email internally, so we
+   synthesise one from the username. No mail is ever sent — email
+   confirmation must stay switched OFF in Supabase auth settings. */
+function authEmailFor(username){ return username + '@users.xonk.app'; }
+async function doAuth(){
+  const username = $('#authUser').value.trim().toLowerCase();
+  const pw = $('#authPw').value;
+  const fail = t => { const el=$('#authErr'); el.textContent=t; el.style.display='block'; };
+  if(!/^[a-z0-9_]{3,20}$/.test(username)) return fail('Username: 3–20 chars, only a–z, 0–9 and _');
+  if(!pw) return fail('Password is required.');
+  if(S.authMode==='up' && pw.length<8) return fail('Password: at least 8 characters.');
+  const goBtn = $('#authGo'), goLbl = goBtn.textContent;
+  goBtn.disabled = true; goBtn.textContent = '…';
+  try{
+    if(S.authMode==='up'){
+      const r = await supa.auth.signUp({email:authEmailFor(username), password:pw, options:{data:{username}}});
+      if(r.error) return fail(/already registered/i.test(r.error.message) ? 'That username is taken.' : r.error.message);
+      if(!r.data.session) return fail('Sign-ups need "Confirm email" switched off in Supabase → Authentication.');
+      toast('Account created — welcome!');
+    } else {
+      const r = await supa.auth.signInWithPassword({email:authEmailFor(username), password:pw});
+      if(r.error) return fail(/invalid/i.test(r.error.message) ? 'Wrong username or password.' : r.error.message);
+      toast('Welcome back');
+    }
+  } finally { goBtn.disabled = false; goBtn.textContent = goLbl; }
+}
+let lastUid = null;
+function applySession(session){
+  S.session = session;
+  if(session){
+    setStatus('ok', usernameOf(session));
+    if(lastUid !== session.user.id){
+      lastUid = session.user.id;
+      closeSheets();
+      loadFromSupa();
+    }
+  } else {
+    lastUid = null;
+    setStatus('', 'Sign in');
+    Object.keys(COLLECTIONS).forEach(k=>{ S.data[k] = {items:[]}; });
+    render();
+  }
+}
+function initSupa(){
+  if(!window.supabase){
+    $('#list').innerHTML = '<div class="empty"><b>Couldn\'t load the account library</b>Check your connection and refresh.</div>';
+    return;
+  }
+  supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  supa.auth.onAuthStateChange((evt, session)=>{ setTimeout(()=>applySession(session), 0); });
+}
+$('#authToggle').addEventListener('click', ()=>setAuthMode(S.authMode==='up'?'in':'up'));
+$('#authGo').addEventListener('click', doAuth);
+$('#authSheet').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); doAuth(); } });
+$('#acctAuthBtn').addEventListener('click', ()=>{ closeSheets(); openAuth(); });
+$('#signOutBtn').addEventListener('click', async ()=>{ await supa.auth.signOut(); closeSheets(); toast('Signed out'); });
+$('#importJsonBtn').addEventListener('click', importLocalJson);
 
 /* ================= go ================= */
 loadCfg();
 applyTheme(S.cfg.theme || 'museum');
-setStatus(S.dirty.size?'dirty':'', S.dirty.size ? S.dirty.size+' unsaved' : (S.cfg.token&&S.cfg.repo?'Synced':'Local'));
-loadAll().then(()=>{
-  if(S.dirty.size) setStatus('dirty', S.dirty.size+' unsaved');
-  verifyToken();
-});
+initSupa();
 </script>
 </body>
 </html>
