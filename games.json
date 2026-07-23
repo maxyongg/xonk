@@ -1,7 +1,7 @@
 {
  "schemaVersion": 1,
  "ratingScale": 10,
- "updatedAt": "2026-07-23T09:07:13.550Z",
+ "updatedAt": "2026-07-23T10:08:35.445Z",
  "items": [
   {
    "id": "g0125",
@@ -19,7 +19,7 @@
   },
   {
    "id": "g0245",
-   "rating": null,
+   "rating": 9,
    "inProgress": false,
    "name": "Nine Sols",
    "coverUrl": "https://media.rawg.io/media/games/cee/cee02d983e2e1e457caa562420f532fb.jpg",
