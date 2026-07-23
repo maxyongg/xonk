@@ -49,7 +49,13 @@ header.top{
   display:flex;align-items:center;gap:20px;flex-wrap:wrap;
 }
 .brand{font-family:var(--font-head);font-weight:700;font-size:26px;letter-spacing:.03em;line-height:1;flex:0 0 auto}
-.brand .star{font-style:normal;color:var(--sig);font-size:.6em;vertical-align:.28em;margin:0 .04em;font-family:var(--font-body)}
+.brand .logo-o{width:.64em;height:.64em;display:inline-block;vertical-align:-.02em;margin:0 .04em}
+.demo-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--ink-2);border:1px solid var(--line);
+  border-radius:10px;padding:10px 12px;margin:10px 0;font-family:var(--font-body);font-size:12px;color:var(--mute)}
+.demo-bar b{color:var(--ink)}
+.demo-bar span{flex:1;min-width:120px}
+.demo-bar button{font-family:var(--font-body);font-size:11px;font-weight:700;border:1px solid var(--line);
+  border-radius:999px;padding:6px 11px;color:var(--ink);background:var(--paper)}
 nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .navlink{
   font-family:var(--font-body);font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
@@ -59,7 +65,6 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .navlink[aria-current="true"]::after{
   content:"";position:absolute;left:0;right:0;bottom:-5px;height:2px;background:var(--sig);
 }
-.navlink .ext{font-size:.9em;margin-left:3px;opacity:.8}
 .hspace{flex:1 1 auto}
 .hsearch{
   flex:0 1 240px;display:flex;align-items:center;gap:8px;min-width:0;
@@ -404,11 +409,10 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="brand">L<i class="star">&#42;</i>I<i class="star">&#42;</i>ST</div>
+    <div class="brand">x<svg class="logo-o" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 10L10 1A9 9 0 0 1 19 10Z" fill="#4fae57"/><path d="M10 10L19 10A9 9 0 0 1 10 19Z" fill="#dc8b3e"/><path d="M10 10L10 19A9 9 0 0 1 1 10Z" fill="#d0487e"/><path d="M10 10L1 10A9 9 0 0 1 10 1Z" fill="#4b82d6"/></svg>nk</div>
     <nav class="nav" id="nav">
       <button class="navlink" data-view="home" aria-current="true">Home</button>
       <button class="navlink" data-view="stats">Stats</button>
-      <a class="navlink" href="https://maxyongg.github.io/collection/" target="_blank" rel="noopener">Collection<span class="ext">&#8599;</span></a>
     </nav>
     <div class="hspace"></div>
     <div class="hsearch">
@@ -502,7 +506,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version">xonk v2026.07.24e</div>
+<div class="version">xonk v2026.07.24f</div>
 
 <script>
 /* ================= config ================= */
@@ -1342,10 +1346,24 @@ function renderStatsTab(){
 }
 
 function render(){
-  if(!S.session){ renderWelcome(); return; }
+  if(!S.session && !S.demo){ renderWelcome(); return; }
   setNavActive();
   if(S.view==='stats') renderStatsTab();
   else renderHome();
+  if(S.demo) $('#list').insertAdjacentHTML('afterbegin', `
+    <div class="demo-bar"><b>Example list</b><span>this is xonk in use — browse freely, nothing here is yours to break</span>
+    <button data-demo-signup>Create your own</button><button data-exit-demo>Back</button></div>`);
+}
+/* demo mode: the repo still carries the pre-account JSON snapshot of my own
+   list — perfect fixed example data, loaded read-only */
+async function enterDemo(){
+  S.demo = true; S.view = 'home';
+  await Promise.all(Object.keys(COLLECTIONS).map(async k=>{
+    try{ S.data[k] = await loadLocal(k); }
+    catch(e){ S.data[k] = {items:[]}; }
+  }));
+  render();
+  window.scrollTo({top:0});
 }
 function renderWelcome(){
   setNavActive();
@@ -1359,6 +1377,9 @@ function renderWelcome(){
     <div class="acts" style="max-width:340px;margin:22px auto 0">
       <button class="btn ghost" id="welcomeUp">Create account</button>
       <button class="btn primary" id="welcomeIn">Sign in</button>
+    </div>
+    <div class="acts" style="max-width:340px;margin:10px auto 0">
+      <button class="btn ghost" id="welcomeDemo" style="flex:1">See an example — a filled-in list</button>
     </div>`;
 }
 function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
@@ -1407,6 +1428,7 @@ function setEditChrome(mode){
   }
 }
 function openEdit(item){
+  if(!S.session){ S.authMode = S.authMode || 'up'; openAuth(); return; }
   const c = COLLECTIONS[S.tab];
   S.editing = item ? {...item} : {id:null, rating:null, rx:null, ry:null};
   /* one-way conversion of an old rating: y from the score, x unknown */
@@ -1589,6 +1611,7 @@ function openItem(k, id){
   S.tab = k; openEdit(item);
 }
 async function logFinished(k, id){
+  if(!S.session){ openAuth(); return; }
   const it = (S.data[k]&&S.data[k].items||[]).find(x=>x.id===id);
   if(!it) return;
   it.inProgress = false; render();
@@ -1609,6 +1632,9 @@ $('#q').addEventListener('input', e=>{
 $('#list').addEventListener('click', e=>{
   if(e.target.closest('#welcomeIn')){ S.authMode='in'; openAuth(); return; }
   if(e.target.closest('#welcomeUp')){ S.authMode='up'; openAuth(); return; }
+  if(e.target.closest('#welcomeDemo')){ enterDemo(); return; }
+  if(e.target.closest('[data-demo-signup]')){ S.authMode='up'; openAuth(); return; }
+  if(e.target.closest('[data-exit-demo]')){ S.demo=false; render(); window.scrollTo({top:0}); return; }
   const fin = e.target.closest('[data-finish]');
   if(fin){ e.stopPropagation(); const [k,id]=fin.dataset.finish.split(':'); logFinished(k,id); return; }
   const qa = e.target.closest('[data-quick-add]');
@@ -1927,6 +1953,7 @@ let lastUid = null;
 function applySession(session){
   S.session = session;
   if(session){
+    S.demo = false;
     setStatus('ok', usernameOf(session));
     if(lastUid !== session.user.id){
       lastUid = session.user.id;
