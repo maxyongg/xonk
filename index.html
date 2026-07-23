@@ -145,18 +145,27 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .rtile .bg{position:absolute;inset:0;background-size:cover;background-position:center}
 .rtile .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.32),rgba(0,0,0,.02) 42%,rgba(0,0,0,.62))}
 .rtile .type{position:absolute;top:9px;left:10px;font-family:var(--font-body);font-size:8.5px;font-weight:700;letter-spacing:.09em;color:rgba(255,255,255,.92)}
-.rtile .rt{position:absolute;top:8px;right:10px;font-family:var(--font-head);font-weight:700;font-size:12px;color:#fff}
+.rtile .rt{position:absolute;top:8px;right:10px}
+.rtile .rt .qmini{width:22px;height:22px}
 .rtile .nm{position:absolute;left:10px;right:10px;bottom:10px;color:#fff;font-family:var(--font-head);font-weight:700;font-size:13px;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 
 /* ---------- table ---------- */
 .cover{flex:0 0 auto;width:54px;height:78px;border-radius:7px;object-fit:cover;background:var(--ink-3)}
-.stars{display:inline-block;width:88px;height:16px;line-height:0}
-.stars svg{width:100%;height:16px;display:block}
-.stars-bg path{fill:var(--ink-3)}
-.stars-fg path{fill:var(--acid)}
-.stars-fg.mid path{fill:var(--mid)}
-.stars-fg.lo path{fill:var(--mute)}
-.stars-empty{font-family:var(--font-body);font-size:13px;color:var(--mute)}
+/* mini quadrant thumbnail: axes cross + one dot, shown wherever stars used to be */
+.qmini{display:inline-block;width:40px;height:40px;line-height:0;flex:0 0 auto}
+.qmini svg{width:100%;height:100%;display:block}
+.qmini .qm-axis{stroke:var(--line);stroke-width:1}
+.qmini .qm-dot{fill:var(--acid)}
+.qmini .qm-dot.legacy{fill:none;stroke:var(--mute);stroke-width:1.5}
+.qmini.ondark .qm-axis{stroke:rgba(255,255,255,.5)}
+.qmini.ondark .qm-dot{fill:#fff}
+.qmini.ondark .qm-dot.legacy{fill:none;stroke:rgba(255,255,255,.85)}
+.rate-empty{font-family:var(--font-body);font-size:13px;color:var(--mute)}
+/* stats scatter: every rated item as one dot on the shared quadrant */
+.qscatter{width:100%;max-width:260px;display:block;margin:0 auto;background:var(--paper);border:1px solid var(--line);border-radius:10px}
+.qscatter .qs-axis{stroke:var(--line);stroke-width:1}
+.qscatter .qs-dot{fill:var(--acid);opacity:.8}
+.qscatter .qs-dot.legacy{fill:none;stroke:var(--mute);stroke-width:1.2;opacity:.8}
 .tablewrap{margin-top:44px;max-width:100%}
 .table-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
 .type-pills{display:flex;gap:8px;flex-wrap:wrap}
@@ -192,7 +201,7 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .col-type{width:76px}
 .col-year{width:56px}
 .col-date{width:104px}
-.col-rating{width:104px}
+.col-rating{width:64px}
 .cell-idx{font-family:var(--font-body);font-size:12px;color:var(--mute)}
 .titlecell{display:flex;align-items:center;gap:13px;min-width:0}
 .titlecell .t{display:flex;flex-direction:column;min-width:0;overflow:hidden}
@@ -210,7 +219,7 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
   .col-creator,.col-type,.col-year,.col-date,.col-rating{display:none}
   .cell-title{font-size:15px;white-space:normal;line-height:1.25}
   .row-rate{display:block;margin-top:6px}
-  .row-rate .stars{width:84px}
+  .row-rate .qmini{width:34px;height:34px}
   .row-sub{display:block;font-family:var(--font-body);font-size:10.5px;color:var(--mute);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .titlecell{gap:13px;align-items:flex-start}
   .swatch{width:50px;height:50px}
@@ -347,12 +356,35 @@ label.f>span{font-family:var(--font-body);font-size:10px;color:var(--mute);
 }
 .in:focus,.search:focus{outline:2px solid var(--sig);outline-offset:1px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.ratepick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.ratepick button{
-  padding:13px 0;border-radius:var(--r);background:var(--paper);
-  border:1px solid var(--line);font-family:var(--font-head);font-weight:700;font-size:15px;color:var(--mute);
+.ratepick{display:block}
+/* ---------- quadrant rating picker ---------- */
+.quad{
+  position:relative;width:100%;max-width:320px;aspect-ratio:1;margin:0 auto;
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
+  touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;
 }
-.ratepick button[aria-pressed="true"]{background:var(--acid);color:var(--on-accent);border-color:var(--acid)}
+.quad .ax{position:absolute;background:var(--line);pointer-events:none}
+.quad .ax.h{left:0;right:0;top:50%;height:1px}
+.quad .ax.v{top:0;bottom:0;left:50%;width:1px}
+.quad-lab{
+  position:absolute;font-family:var(--font-body);font-size:9px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--mute);pointer-events:none;
+}
+.quad-lab.top{top:6px;left:50%;transform:translateX(-50%)}
+.quad-lab.bottom{bottom:6px;left:50%;transform:translateX(-50%)}
+.quad-lab.left{left:6px;top:50%;transform:translateY(-50%) rotate(180deg);writing-mode:vertical-rl}
+.quad-lab.right{right:6px;top:50%;transform:translateY(-50%);writing-mode:vertical-rl}
+.quad-dot{
+  position:absolute;width:14px;height:14px;border-radius:50%;background:var(--acid);
+  transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 2px var(--paper);
+}
+.quad-dot.legacy{background:none;border:2px solid var(--mute);box-shadow:none}
+.quad-foot{display:flex;align-items:center;gap:10px;margin:8px auto 0;max-width:320px}
+.quad-read{flex:1;font-family:var(--font-body);font-size:12px;color:var(--mute);line-height:1.4}
+.quad-clear{
+  flex:0 0 auto;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--sig);
+  border:1px solid var(--sig);border-radius:999px;padding:6px 12px;background:none;
+}
 .acts{display:flex;gap:10px;margin-top:18px}
 .btn{flex:1;padding:14px;border-radius:var(--r);font-weight:600;font-size:15px}
 .btn.primary{background:var(--ink);color:var(--paper)}
@@ -486,7 +518,7 @@ label.f>span{font-family:var(--font-body);font-size:10px;color:var(--mute);
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version">v2026.07.23i</div>
+<div class="version">xonk v2026.07.23a</div>
 
 <script>
 /* ================= config ================= */
@@ -549,8 +581,6 @@ const COLLECTIONS = {
   }
 };
 const SORTS = [
-  {k:'rating', d:-1, l:'RATING ↓'},
-  {k:'rating', d: 1, l:'RATING ↑'},
   {k:'name',   d: 1, l:'A–Z'},
   {k:'recent', d:-1, l:'NEWEST'}
 ];
@@ -598,7 +628,7 @@ function renderThemeGrid(){
 
 /* ================= state ================= */
 const S = {
-  view:'home', tab:'films', typeFilter:'all', q:'', starFilter:0,
+  view:'home', tab:'films', typeFilter:'all', q:'',
   sortKey:'date', sortDir:-1,
   data:{}, shas:{}, dirty:new Set(), authError:null,
   cfg:{repo:'', branch:'main', token:'', expires:'', tmdbKey:'', rawgKey:'', theme:'museum'},
@@ -1167,7 +1197,6 @@ function tableRows(){
   const q = S.q.trim().toLowerCase();
   let rows = allRows();
   if(S.typeFilter!=='all') rows = rows.filter(r=>r.k===S.typeFilter);
-  if(S.starFilter>0) rows = rows.filter(r=>r.item.rating && (r.item.rating/r.c.scale*5) >= S.starFilter - 1e-9);
   if(q) rows = rows.filter(r=>Object.values(r.item).some(v=>v!=null && String(v).toLowerCase().includes(q)));
   const dir = S.sortDir;
   const nameCmp = (a,b)=>String(a.item.name||'').localeCompare(String(b.item.name||''));
@@ -1185,9 +1214,7 @@ function tableRows(){
       if(!bd) return -1;
       return ad.localeCompare(bd)*dir || nameCmp(a,b);
     }
-    // rating: normalize each to a 0–1 fraction so /10 and /5 scales compare fairly
-    const an = (a.item.rating||0)/a.c.scale, bn = (b.item.rating||0)/b.c.scale;
-    return (an-bn)*dir || nameCmp(a,b);
+    return nameCmp(a,b);
   });
   return rows;
 }
@@ -1219,29 +1246,31 @@ function setNavActive(){
 }
 
 /* ---- home / landing ---- */
-function rateClassFor(r, sc){
-  if(!r) return 'lo';
-  if(r/sc >= 0.85) return 'hi';
-  if(r/sc >= 0.55) return 'mid';
-  return 'lo';
+/* ---- quadrant ratings ----
+   x = enjoyment, y = quality ("how well made"), both -100..100.
+   Old single-number ratings convert to the y-axis only:
+     y = rating/scale*200 - 100
+   x stays null (drawn hollow on the vertical axis) until re-rated. */
+function quadOf(item, sc){
+  if(item.ry!=null) return {x:(item.rx!=null ? item.rx : null), y:item.ry, legacy:item.rx==null};
+  if(item.rating!=null) return {x:null, y:Math.round((item.rating/sc)*200-100), legacy:true};
+  return null;
 }
-/* normalizes any X/sc rating to a proportional 5-star fill, so games/films
-   (out of 10) and tv/books (out of 5) read the same way at a glance.
-   Built from SVG paths rather than layered ★ text runs — text-clip tricks
-   rely on two glyph runs measuring pixel-identical, which mobile browsers'
-   emoji/symbol fallback fonts don't guarantee, so stars broke on phones. */
-let starUid = 0;
-const STAR_PATH = "M8 .6l2.17 4.53 4.94.73-3.58 3.5.85 4.95L8 11.9l-4.38 2.4.85-4.95-3.58-3.5 4.94-.73z";
-function starsHTML(rating, sc, tier){
-  if(!rating) return `<span class="stars-empty">–</span>`;
-  const pct = Math.max(4, Math.min(100, (rating/sc)*100));
-  const id = 'sc'+(starUid++);
-  const xs = [0,18,36,54,72];
-  const paths = xs.map(x=>`<path d="${STAR_PATH}" transform="translate(${x},2)"/>`).join('');
-  return `<span class="stars"><svg width="88" height="16" viewBox="0 0 88 16" aria-hidden="true">
-    <g class="stars-bg">${paths}</g>
-    <clipPath id="${id}" clipPathUnits="objectBoundingBox"><rect x="0" y="0" width="${(pct/100).toFixed(3)}" height="1"/></clipPath>
-    <g class="stars-fg ${tier}" clip-path="url(#${id})">${paths}</g>
+function fmtSigned(n){ n = Math.round(n); return (n>0?'+':'')+n; }
+function quadLabel(q){
+  if(!q) return '';
+  return q.x==null
+    ? `quality ${fmtSigned(q.y)} — enjoyment not set`
+    : `enjoyment ${fmtSigned(q.x)} · quality ${fmtSigned(q.y)}`;
+}
+function quadMiniHTML(q, cls){
+  if(!q) return `<span class="rate-empty">–</span>`;
+  const cx = 20 + ((q.x==null?0:q.x)/100)*17;
+  const cy = 20 - (q.y/100)*17;
+  return `<span class="qmini${cls?' '+cls:''}" title="${quadLabel(q)}"><svg viewBox="0 0 40 40" aria-hidden="true">
+    <line class="qm-axis" x1="2" y1="20" x2="38" y2="20"/>
+    <line class="qm-axis" x1="20" y1="2" x2="20" y2="38"/>
+    <circle class="qm-dot${q.legacy?' legacy':''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${q.legacy?3.2:3.8}"/>
   </svg></span>`;
 }
 function computeHome(){
@@ -1324,11 +1353,11 @@ function renderHome(){
 
   const recent = recentlyLogged(14);
   const recentTiles = recent.length ? recent.map(r=>{
-    const rt = r.item.rating ? (r.item.rating/r.c.scale*10).toFixed(1) : '';
+    const q = quadOf(r.item, r.c.scale);
     return `<div class="rtile" data-open="${r.k}:${r.item.id}">
       <div class="bg" style="${bgStyle(r.item)}"></div><div class="shade"></div>
       <div class="type">${TYPE_LABELS[r.k].toUpperCase()}</div>
-      ${rt?`<div class="rt">${rt}</div>`:''}
+      ${q?`<div class="rt">${quadMiniHTML(q,'ondark')}</div>`:''}
       <div class="nm">${esc(r.item.name||'Untitled')}</div>
     </div>`;
   }).join('') : `<div class="empty" style="padding:26px 10px">Nothing with a date logged yet.</div>`;
@@ -1349,22 +1378,18 @@ function renderHome(){
 function renderTable(){
   const rows = tableRows();
   const total = rows.length;
-  const rated = rows.filter(r=>r.item.rating);
-  const avg5 = rated.length ? rated.reduce((s,r)=>s+(r.item.rating/r.c.scale*5),0)/rated.length : 0;
   const pills = [['all','All'],['films','Film'],['tv','TV'],['games','Game'],['books','Book']].map(([k,l])=>
     `<button class="pill" data-type="${k}" aria-pressed="${S.typeFilter===k}">${l}</button>`).join('');
   const arr = key => S.sortKey===key ? `<span class="arr">${S.sortDir<0?'↓':'↑'}</span>` : '';
   const sortVal = `${S.sortKey}:${S.sortDir}`;
-  const sortOpts = [['date:-1','Newest first'],['date:1','Oldest first'],['rating:-1','Highest rated'],['rating:1','Lowest rated'],['name:1','Title A–Z'],['name:-1','Title Z–A']];
+  const sortOpts = [['date:-1','Newest first'],['date:1','Oldest first'],['name:1','Title A–Z'],['name:-1','Title Z–A']];
   const sortSel = `<label class="tsel"><span>Sort</span><select id="sortSel">${sortOpts.map(([v,l])=>`<option value="${v}"${v===sortVal?' selected':''}>${l}</option>`).join('')}</select></label>`;
-  const starOpts = [['0','All ratings'],['5','5★ only'],['4','4★ &amp; up'],['3','3★ &amp; up'],['2','2★ &amp; up'],['1','1★ &amp; up']];
-  const starSel = `<label class="tsel"><span>Stars</span><select id="starSel">${starOpts.map(([v,l])=>`<option value="${v}"${+v===S.starFilter?' selected':''}>${l}</option>`).join('')}</select></label>`;
   const body = rows.length ? rows.map((r,ix)=>{
     const yr = r.item[yearField(r.k)] || '';
     const cr = r.item[creatorField(r.k)] || '';
     const dstr = fmtDate(dateAddedOf(r));
     const subParts = [TYPE_LABELS[r.k], yr, (dstr!=='—'?dstr:'')].filter(Boolean).join(' · ');
-    const stars = starsHTML(r.item.rating, r.c.scale, rateClassFor(r.item.rating, r.c.scale));
+    const stars = quadMiniHTML(quadOf(r.item, r.c.scale));
     return `<tr data-open="${r.k}:${r.item.id}">
       <td class="cell-idx col-idx num">${String(ix+1).padStart(2,'0')}</td>
       <td class="col-title"><div class="titlecell"><div class="swatch" style="${bgStyle(r.item)}"></div><div class="t"><span class="cell-title">${esc(r.item.name||'Untitled')}</span><span class="row-rate">${stars}</span><span class="row-sub">${subParts}</span></div></div></td>
@@ -1378,8 +1403,8 @@ function renderTable(){
   return `<div class="tablewrap">
     <div class="table-top">
       <div class="type-pills">${pills}</div>
-      <div class="table-tools">${starSel}${sortSel}</div>
-      <div class="table-meta">${total} works${avg5?` &middot; avg ★${avg5.toFixed(1)}`:''}</div>
+      <div class="table-tools">${sortSel}</div>
+      <div class="table-meta">${total} works</div>
     </div>
     <table class="mtable">
       <thead><tr>
@@ -1389,7 +1414,7 @@ function renderTable(){
         <th class="col-type">Type</th>
         <th class="col-year num sortable" data-sort="year">Year${arr('year')}</th>
         <th class="col-date sortable" data-sort="date">Date added${arr('date')}</th>
-        <th class="col-rating sortable" data-sort="rating">Rating${arr('rating')}</th>
+        <th class="col-rating">Rating</th>
       </tr></thead>
       <tbody>${body}</tbody>
     </table>
@@ -1399,12 +1424,14 @@ function renderTable(){
 /* ---- stats tab: computed live from whatever's currently loaded, no separate file ---- */
 function computeStats(){
   const cats = [['films','Films'],['games','Games'],['tv','TV'],['books','Books']];
-  const totals={}, avg={}, topGenre={}, yearTrend={};
+  const totals={}, avgE={}, avgQ={}, topGenre={}, yearTrend={};
   cats.forEach(([k])=>{
     const items = (S.data[k]&&S.data[k].items)||[];
     totals[k] = items.length;
-    const rated = items.filter(i=>i.rating);
-    avg[k] = rated.length ? rated.reduce((s,i)=>s+i.rating,0)/rated.length : 0;
+    const qs = items.map(i=>quadOf(i, COLLECTIONS[k].scale)).filter(Boolean);
+    const ex = qs.filter(q=>q.x!=null);
+    avgE[k] = ex.length ? ex.reduce((s,q)=>s+q.x,0)/ex.length : null;
+    avgQ[k] = qs.length ? qs.reduce((s,q)=>s+q.y,0)/qs.length : null;
     const gc = {};
     items.forEach(i=>{
       String(i.genre||'').split(/[\/,]/).forEach(g=>{ g=g.trim(); if(g) gc[g]=(gc[g]||0)+1; });
@@ -1419,7 +1446,7 @@ function computeStats(){
       if(y && /^\d{4}$/.test(y)) yearTrend[y]=(yearTrend[y]||0)+1;
     });
   });
-  return {totals, avg, topGenre, yearTrend, cats};
+  return {totals, avgE, avgQ, topGenre, yearTrend, cats};
 }
 function renderOverviewStats(){
   const s = computeStats();
@@ -1433,9 +1460,10 @@ function renderOverviewStats(){
     return `<div class="yearbar" style="height:${h}px"><span>${n}</span><b>${y}</b></div>`;
   }).join('');
   const chips = s.cats.map(([k,label])=>{
-    const a = s.avg[k] ? s.avg[k].toFixed(1) : '–';
+    const e = s.avgE[k]!=null ? 'E'+fmtSigned(s.avgE[k]) : 'E–';
+    const qv = s.avgQ[k]!=null ? 'Q'+fmtSigned(s.avgQ[k]) : 'Q–';
     const g = s.topGenre[k] || '–';
-    return `<span class="stats-chip stats-chip-click" data-statcat="${k}" role="button" tabindex="0">${label}: ${a} avg &middot; ${esc(g)}</span>`;
+    return `<span class="stats-chip stats-chip-click" data-statcat="${k}" role="button" tabindex="0">${label}: ${e} &middot; ${qv} &middot; ${esc(g)}</span>`;
   }).join('');
   return `
     <div class="stats-grid">${cards}</div>
@@ -1445,7 +1473,7 @@ function renderOverviewStats(){
         <div class="yearbars">${bars || '<span class="stat-label">Not enough dated items yet</span>'}</div>
       </div>
       <div class="stats-tile wide">
-        <div class="stats-h">Averages &amp; top genres &mdash; tap to open a category</div>
+        <div class="stats-h">Avg enjoyment (E) &amp; quality (Q), top genre &mdash; tap to open a category</div>
         <div class="stats-chips">${chips}</div>
       </div>
     </div>`;
@@ -1468,9 +1496,10 @@ function computeCategoryStats(k, filter){
   const allItems = (S.data[k]&&S.data[k].items)||[];
   const items = applyStatsFilter(allItems, creatorField, filter, dateField);
   const sc = c.scale;
-  const dist = {};
-  for(let r=1;r<=sc;r++) dist[r]=0;
-  items.forEach(i=>{ if(dist[i.rating]!=null) dist[i.rating]++; });
+  const points = items.map(i=>quadOf(i, sc)).filter(Boolean);
+  const ex = points.filter(q=>q.x!=null);
+  const avgE = ex.length ? ex.reduce((s,q)=>s+q.x,0)/ex.length : null;
+  const avgQ = points.length ? points.reduce((s,q)=>s+q.y,0)/points.length : null;
 
   const gc = {};
   items.forEach(i=>{ genresOf(i).forEach(g=>{ gc[g]=(gc[g]||0)+1; }); });
@@ -1480,9 +1509,6 @@ function computeCategoryStats(k, filter){
   items.forEach(i=>{ creatorsOf(i,creatorField).forEach(name=>{ cc[name]=(cc[name]||0)+1; }); });
   const creators = Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
-  const rated = items.filter(i=>i.rating);
-  const avgRating = rated.length ? rated.reduce((s,i)=>s+i.rating,0)/rated.length : 0;
-  const perfect = items.filter(i=>i.rating===sc).length;
 
   const extra = {};
   if(k==='films'){
@@ -1516,17 +1542,22 @@ function computeCategoryStats(k, filter){
   });
   const yearTrend = Object.entries(yc).sort((a,b)=>a[0]-b[0]);
 
-  return {sc, dist, genres, creators, creatorField, dateField, yearTrend, avgRating, perfect, extra, total: items.length};
+  return {sc, points, avgE, avgQ, genres, creators, creatorField, dateField, yearTrend, extra, total: items.length};
 }
 function renderCategoryStats(k){
   const c = COLLECTIONS[k];
   const filter = S.statsFilter;
   const s = computeCategoryStats(k, filter);
-  const distMax = Math.max(1, ...Object.values(s.dist));
-  const distBars = Array.from({length:s.sc}, (_,x)=>{
-    const r=x+1, n=s.dist[r], h=Math.round((n/distMax)*80)+4;
-    return `<div class="yearbar" style="height:${h}px"><span>${n}</span><b>${r}</b></div>`;
+  const scatterDots = s.points.map(q=>{
+    const cx = 100 + ((q.x==null?0:q.x)/100)*92;
+    const cy = 100 - (q.y/100)*92;
+    return `<circle class="qs-dot${q.legacy?' legacy':''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3"/>`;
   }).join('');
+  const scatter = s.points.length ? `<svg class="qscatter" viewBox="0 0 200 200" aria-hidden="true">
+    <line class="qs-axis" x1="4" y1="100" x2="196" y2="100"/>
+    <line class="qs-axis" x1="100" y1="4" x2="100" y2="196"/>
+    ${scatterDots}
+  </svg>` : '<span class="stat-label">Nothing rated yet</span>';
 
   const genreMax = Math.max(1, ...s.genres.map(g=>g[1]));
   const genreRows = s.genres.map(([g,n])=>`
@@ -1553,7 +1584,7 @@ function renderCategoryStats(k){
   let extraLabel = '', extraChips = '';
   if(k==='films'){
     extraLabel = 'Viewing habits';
-    extraChips = `${s.extra.avgGap!=null?`<span class="stats-chip">${s.extra.avgGap.toFixed(1)} yr avg gap between release &amp; watch</span>`:''}<span class="stats-chip">${s.perfect} perfect ${c.scale}/${c.scale}</span>`;
+    extraChips = `${s.extra.avgGap!=null?`<span class="stats-chip">${s.extra.avgGap.toFixed(1)} yr avg gap between release &amp; watch</span>`:''}`;
   } else if(k==='games'){
     extraLabel = 'Studio size &amp; completion';
     const chips = Object.entries(s.extra.studioStatus||{}).map(([lbl,n])=>`<span class="stats-chip">${esc(lbl)}: ${n}</span>`).join('');
@@ -1570,13 +1601,13 @@ function renderCategoryStats(k){
     ${filterChip}
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-num">${s.total}</div><div class="stat-label">Total</div></div>
-      <div class="stat-card"><div class="stat-num">${s.avgRating?s.avgRating.toFixed(1):'–'}</div><div class="stat-label">Avg rating</div></div>
-      <div class="stat-card"><div class="stat-num">${s.perfect}</div><div class="stat-label">Perfect ${c.scale}/${c.scale}</div></div>
+      <div class="stat-card"><div class="stat-num">${s.avgE!=null?fmtSigned(s.avgE):'–'}</div><div class="stat-label">Avg enjoyment</div></div>
+      <div class="stat-card"><div class="stat-num">${s.avgQ!=null?fmtSigned(s.avgQ):'–'}</div><div class="stat-label">Avg quality</div></div>
     </div>
     <div class="stats-tiles">
       <div class="stats-tile">
-        <div class="stats-h">Rating distribution</div>
-        <div class="yearbars">${distBars}</div>
+        <div class="stats-h">Rating map &mdash; enjoyment &times; quality</div>
+        ${scatter}
       </div>
       <div class="stats-tile">
         <div class="stats-h">${dateLabel} by year &mdash; tap to filter</div>
@@ -1623,10 +1654,15 @@ function optionsFor(key){
 /* ================= edit sheet ================= */
 function openEdit(item){
   const c = COLLECTIONS[S.tab];
-  S.editing = item ? {...item} : {id:null, rating:null};
+  S.editing = item ? {...item} : {id:null, rating:null, rx:null, ry:null};
+  /* one-way conversion of an old rating: y from the score, x unknown */
+  if(S.editing.ry==null && S.editing.rating!=null){
+    S.editing.ry = Math.round((S.editing.rating/c.scale)*200-100);
+    S.editing.rx = null;
+  }
   $('#editTitle').textContent = item ? 'Edit' : 'Add '+c.label.toLowerCase().replace(/s$/,'');
   $('#delEdit').style.display = item ? 'block' : 'none';
-  $('#rlabel').textContent = `Rating / ${c.scale}`;
+  $('#rlabel').textContent = 'Rating';
 
   const tp = $('#typePick');
   if(item){ tp.style.display='none'; }
@@ -1667,10 +1703,7 @@ function openEdit(item){
     $('#inProgressBtn').setAttribute('aria-pressed', S.editing.inProgress ? 'true' : 'false');
   }
 
-  $('#ratepick').innerHTML = Array.from({length:c.scale},(_,x)=>{
-    const r=x+1;
-    return `<button data-r="${r}" aria-pressed="${S.editing.rating===r}">${r}</button>`;
-  }).join('');
+  renderQuadPicker();
 
   openSheet('#editSheet');
 }
@@ -1774,7 +1807,6 @@ $('#list').addEventListener('click', e=>{
 });
 $('#list').addEventListener('change', e=>{
   if(e.target.id==='sortSel'){ const [k,d]=e.target.value.split(':'); S.sortKey=k; S.sortDir=+d; render(); }
-  else if(e.target.id==='starSel'){ S.starFilter=+e.target.value; render(); }
 });
 $('#addBtn').addEventListener('click', ()=>{
   S.tab = (S.typeFilter!=='all') ? S.typeFilter : 'films';
@@ -1802,12 +1834,68 @@ $('#themeGrid').addEventListener('click', e=>{
   const b = e.target.closest('[data-theme]'); if(!b) return;
   applyTheme(b.dataset.theme); toast('Theme applied');
 });
+/* ---- quadrant picker: tap or drag anywhere in the square ---- */
+function renderQuadPicker(){
+  $('#ratepick').innerHTML = `
+    <div class="quad" id="quadArea">
+      <div class="ax h"></div><div class="ax v"></div>
+      <span class="quad-lab top">Well made</span>
+      <span class="quad-lab bottom">Poorly made</span>
+      <span class="quad-lab left">Didn't enjoy</span>
+      <span class="quad-lab right">Enjoyed</span>
+      <div class="quad-dot" id="quadDot" style="display:none"></div>
+    </div>
+    <div class="quad-foot">
+      <span class="quad-read" id="quadRead"></span>
+      <button type="button" class="quad-clear" id="quadClear">Clear</button>
+    </div>`;
+  updateQuadUI();
+}
+function updateQuadUI(){
+  const dot = $('#quadDot'), read = $('#quadRead'), clr = $('#quadClear');
+  const rx = S.editing.rx, ry = S.editing.ry;
+  if(ry==null){
+    dot.style.display = 'none';
+    read.textContent = 'Tap anywhere on the graph to rate';
+    clr.style.display = 'none';
+    return;
+  }
+  dot.style.display = 'block';
+  dot.classList.toggle('legacy', rx==null);
+  dot.style.left = (((rx==null?0:rx)+100)/200*100)+'%';
+  dot.style.top  = ((100-ry)/200*100)+'%';
+  read.textContent = rx==null
+    ? `Quality ${fmtSigned(ry)} — converted from the old rating. Tap to set enjoyment too.`
+    : `Enjoyment ${fmtSigned(rx)} · Quality ${fmtSigned(ry)}`;
+  clr.style.display = 'block';
+}
+let quadDragging = false;
+function quadPoint(e){
+  const r = $('#quadArea').getBoundingClientRect();
+  const x = Math.max(-100, Math.min(100, Math.round(((e.clientX-r.left)/r.width)*200-100)));
+  const y = Math.max(-100, Math.min(100, Math.round((1-(e.clientY-r.top)/r.height)*200-100)));
+  return {x,y};
+}
+$('#ratepick').addEventListener('pointerdown', e=>{
+  const area = e.target.closest('#quadArea'); if(!area) return;
+  e.preventDefault();
+  quadDragging = true;
+  try{ area.setPointerCapture(e.pointerId); }catch(_){}
+  const {x,y} = quadPoint(e);
+  S.editing.rx = x; S.editing.ry = y; updateQuadUI();
+});
+$('#ratepick').addEventListener('pointermove', e=>{
+  if(!quadDragging) return;
+  const {x,y} = quadPoint(e);
+  S.editing.rx = x; S.editing.ry = y; updateQuadUI();
+});
+$('#ratepick').addEventListener('pointerup', ()=>{ quadDragging = false; });
+$('#ratepick').addEventListener('pointercancel', ()=>{ quadDragging = false; });
 $('#ratepick').addEventListener('click', e=>{
-  const b = e.target.closest('button[data-r]'); if(!b) return;
-  const r = +b.dataset.r;
-  S.editing.rating = (S.editing.rating===r) ? null : r;
-  $('#ratepick').querySelectorAll('button').forEach(x=>
-    x.setAttribute('aria-pressed', +x.dataset.r===S.editing.rating));
+  if(e.target.closest('#quadClear')){
+    S.editing.rx = null; S.editing.ry = null; S.editing.rating = null;
+    updateQuadUI();
+  }
 });
 $('#bFix').addEventListener('click', openSet);
 $('#testConnBtn').addEventListener('click', testConnection);
