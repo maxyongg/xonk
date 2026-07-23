@@ -347,8 +347,8 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .suggest-meta{display:flex;flex-direction:column;min-width:0}
 .suggest-title{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .suggest-year{font-family:var(--font-body);font-size:11px;color:var(--mute)}
-label.f{display:block;margin-bottom:12px}
-label.f>span{font-family:var(--font-body);font-size:10px;color:var(--mute);
+label.f,div.f{display:block;margin-bottom:12px}
+label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--mute);
   text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px}
 .in{
   width:100%;background:var(--paper);border:1px solid var(--line);
@@ -462,7 +462,9 @@ label.f>span{font-family:var(--font-body);font-size:10px;color:var(--mute);
     <button class="btn ghost" type="button" id="inProgressBtn" style="width:100%" aria-pressed="false">Currently reading</button>
   </div>
   <div id="fields"></div>
-  <label class="f"><span id="rlabel">Rating</span><div class="ratepick" id="ratepick"></div></label>
+  <!-- div, not label: a label forwards any click inside it to its first button,
+       which made every graph tap immediately trigger the Clear button -->
+  <div class="f"><span id="rlabel">Rating</span><div class="ratepick" id="ratepick"></div></div>
   <div class="acts">
     <button class="btn ghost" id="cancelEdit">Cancel</button>
     <button class="btn primary" id="saveEdit">Save</button>
@@ -518,7 +520,7 @@ label.f>span{font-family:var(--font-body);font-size:10px;color:var(--mute);
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version">xonk v2026.07.23a</div>
+<div class="version">xonk v2026.07.23b</div>
 
 <script>
 /* ================= config ================= */
