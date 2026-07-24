@@ -582,7 +582,13 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 .btn.primary{background:var(--ink);color:var(--paper)}
 .btn.ghost{background:var(--ink-3);color:var(--ink);border:1px solid var(--line)}
 .btn.danger{background:none;color:var(--sig);border:1px solid var(--sig);flex:0 0 auto;padding:14px 16px}
-#inProgressBtn[aria-pressed="true"]{background:var(--acid);color:var(--on-accent);border-color:var(--acid)}
+.statuslbl{font-family:var(--font-body);font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px}
+.statuspick{display:flex;gap:6px}
+.statuspick button{flex:1;padding:11px 6px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--mute);font-family:var(--font-body);font-size:12px;font-weight:600;line-height:1.15}
+.statuspick button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.statuspick button[data-status="inProgress"][aria-pressed="true"]{background:var(--acid);color:var(--on-accent);border-color:var(--acid)}
+.statuspick button[data-status="dnf"][aria-pressed="true"]{background:var(--sig);color:#fff;border-color:var(--sig)}
+#devUnratedBtn[aria-pressed="true"]{background:var(--acid);color:var(--on-accent);border-color:var(--acid)}
 .note{font-family:var(--font-body);font-size:11px;color:var(--mute);line-height:1.6;
   border-left:2px solid var(--line);padding-left:10px;margin:0 0 14px}
 .note b{color:var(--ink)}
@@ -598,7 +604,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 .version{
   position:fixed;right:8px;bottom:calc(4px + var(--safe-b));z-index:44;
   font-family:var(--font-body);font-size:9px;color:var(--line);
-  pointer-events:none;user-select:none;
+  pointer-events:auto;cursor:pointer;user-select:none;padding:4px;
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -642,8 +648,9 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
     <img id="coverPreview" style="width:54px;height:78px;border-radius:7px;object-fit:cover;background:var(--ink-3);display:none">
     <button class="btn ghost" type="button" id="fetchCoverBtn" style="flex:0 0 auto;padding:10px 14px">Fetch cover</button>
   </div>
-  <div id="inProgressWrap" style="display:none;margin-bottom:12px">
-    <button class="btn ghost" type="button" id="inProgressBtn" style="width:100%" aria-pressed="false">Currently reading</button>
+  <div id="statusWrap" style="display:none;margin-bottom:12px">
+    <span class="statuslbl">Status</span>
+    <div class="statuspick" id="statusPick"></div>
   </div>
   <div id="fields"></div>
   <!-- div, not label: a label forwards any click inside it to its first button,
@@ -719,8 +726,21 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   </div>
 </div>
 
+<!-- dev menu: opened by tapping the version stamp -->
+<div class="sheet" id="devSheet" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <h2>Dev menu</h2>
+  <p class="note">Hidden tools — you found the version stamp.</p>
+  <div class="acts" style="margin-top:2px">
+    <button class="btn ghost" id="devUnratedBtn" aria-pressed="false">Show only unrated items</button>
+  </div>
+  <div class="acts">
+    <button class="btn ghost" id="devClose">Close</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
-<div class="version">xonk v2026.07.24n</div>
+<div class="version" id="verStamp">xonk v2026.07.24o</div>
 
 <script>
 /* ================= config ================= */
@@ -733,32 +753,27 @@ const COLLECTIONS = {
     fields:[
       {k:'name',        l:'Title',        t:'text'},
       {k:'coverUrl',    l:'Cover image URL', t:'text'},
-      {k:'developer',   l:'Publisher / dev', t:'text'},
-      {k:'studioStatus',l:'Studio',       t:'select', opts:['AAA','AA','Indie']},
+      {k:'developer',   l:'Studio',       t:'text'},
       {k:'genre',       l:'Genre',        t:'text', list:true},
       {k:'console',     l:'Console',      t:'text', list:true},
-      {k:'mainStoryPct',l:'Main story %', t:'text', half:true},
       {k:'datePlayed',  l:'Date played',  t:'date', half:true},
       {k:'yearReleased',l:'Year released',t:'number', half:true},
     ],
     sub: i => [i.developer, i.console, i.yearReleased].filter(Boolean).join(' · '),
-    pct: i => i.mainStoryPct, pctLabel:'story'
+    pct: () => null
   },
   tv: {
-    label:'TV', file:'tv.json', scale:5, idp:'t', recentFields:['dateWatched','lastSeasonYear','firstSeasonYear'],
+    label:'TV', file:'tv.json', scale:5, idp:'t', recentFields:['dateWatched'],
     fields:[
-      {k:'name',           l:'Title',    t:'text'},
-      {k:'coverUrl',       l:'Cover image URL', t:'text'},
-      {k:'genre',          l:'Genre',    t:'text', list:true},
-      {k:'network',        l:'Network',  t:'text', list:true},
-      {k:'seasons',        l:'Seasons',  t:'text', half:true},
-      {k:'watchedPct',     l:'Watched %',t:'text', half:true},
-      {k:'firstSeasonYear',l:'First season', t:'number', half:true},
-      {k:'lastSeasonYear', l:'Last season',  t:'number', half:true},
-      {k:'dateWatched',    l:'Watched',      t:'date',   half:true},
+      {k:'name',        l:'Title',    t:'text'},
+      {k:'coverUrl',    l:'Cover image URL', t:'text'},
+      {k:'genre',       l:'Genre',    t:'text', list:true},
+      {k:'network',     l:'Network',  t:'text', list:true},
+      {k:'released',    l:'Released', t:'date', half:true},
+      {k:'dateWatched', l:'Watched',  t:'date', half:true},
     ],
-    sub: i => [i.network, i.genre, i.seasons?i.seasons+' seasons':null].filter(Boolean).join(' · '),
-    pct: i => i.watchedPct, pctLabel:'watched'
+    sub: i => [i.network, i.genre].filter(Boolean).join(' · '),
+    pct: () => null
   },
   films: {
     label:'Films', file:'films.json', scale:10, idp:'f', recentFields:['dateWatched'],
@@ -839,11 +854,18 @@ const S = {
   cfg:{theme:'museum'},
   editing:null, statsCat:'overview', statsFilter:null,
   pfFilter:'all', profile:null, demoProfile:null,
-  people:null, profileTarget:null
+  people:null, profileTarget:null, unratedOnly:false
 };
 const TYPE_LABELS = {games:'Game', tv:'TV', films:'Film', books:'Book'};
 function creatorField(k){ return {films:'director',games:'developer',tv:'network',books:'author'}[k]; }
 function yearField(k){ return {films:'yearReleased',games:'yearReleased',tv:'firstSeasonYear',books:'yearPublished'}[k]; }
+/* numeric release year for table/sort/stats. TV stores a full "released" date
+   (first-episode air date), so derive its year; other kinds hold a year field. */
+function itemYear(k, item){
+  if(k==='tv') return item.released ? (+String(item.released).slice(0,4)||null) : (item.releasedYear||null);
+  const v = item[yearField(k)];
+  return (v!=null && v!=='') ? (+v||null) : null;
+}
 const $ = s => document.querySelector(s);
 const LS = 'ledger.v1';
 
@@ -1000,9 +1022,7 @@ async function fillFromSuggestion(k, picked){
       const dj = await mediaApi({action:'detail', kind:'tv', id:picked.id});
       setField('genre', (dj.genres||[]).map(g=>g.name).join('/'));
       setField('network', (dj.networks||[]).map(n=>n.name).slice(0,2).join('/'));
-      setField('seasons', dj.number_of_seasons||'');
-      setField('firstSeasonYear', (dj.first_air_date||'').slice(0,4));
-      if(dj.status && dj.status!=='Returning Series') setField('lastSeasonYear', (dj.last_air_date||'').slice(0,4));
+      setField('released', dj.first_air_date || (picked.raw && picked.raw.first_air_date) || '');
       if(picked.raw.poster_path){
         const url = `https://image.tmdb.org/t/p/w342${picked.raw.poster_path}`;
         setField('coverUrl', url); updateCoverPreview(url);
@@ -1096,13 +1116,14 @@ function tableRows(){
   const q = S.q.trim().toLowerCase();
   let rows = allRows();
   if(S.typeFilter!=='all') rows = rows.filter(r=>r.k===S.typeFilter);
+  if(S.unratedOnly) rows = rows.filter(r=>quadOf(r.item, r.c.scale)==null);
   if(q) rows = rows.filter(r=>Object.values(r.item).some(v=>v!=null && String(v).toLowerCase().includes(q)));
   const dir = S.sortDir;
   const nameCmp = (a,b)=>String(a.item.name||'').localeCompare(String(b.item.name||''));
   rows.sort((a,b)=>{
     if(S.sortKey==='name') return nameCmp(a,b)*dir;
     if(S.sortKey==='year'){
-      const ay = +(a.item[yearField(a.k)]||0), by = +(b.item[yearField(b.k)]||0);
+      const ay = itemYear(a.k,a.item)||0, by = itemYear(b.k,b.item)||0;
       return (ay-by)*dir || nameCmp(a,b);
     }
     if(S.sortKey==='date'){
@@ -1248,8 +1269,8 @@ function computeCurrently(){ return computeCurrentlyFrom(allRows()); }
 function quickAddCurrent(k){
   S.tab = k;
   openEdit(null);
+  S.editing.status = 'inProgress';
   S.editing.inProgress = true;
-  $('#inProgressBtn').setAttribute('aria-pressed','true');
 }
 function renderHome(){
   const cur = computeCurrently();
@@ -1306,7 +1327,7 @@ function renderTable(){
   const sortOpts = [['date:-1','Newest first'],['date:1','Oldest first'],['name:1','Title A–Z'],['name:-1','Title Z–A']];
   const sortSel = `<label class="tsel"><span>Sort</span><select id="sortSel">${sortOpts.map(([v,l])=>`<option value="${v}"${v===sortVal?' selected':''}>${l}</option>`).join('')}</select></label>`;
   const body = rows.length ? rows.map((r,ix)=>{
-    const yr = r.item[yearField(r.k)] || '';
+    const yr = itemYear(r.k, r.item) || '';
     const cr = r.item[creatorField(r.k)] || '';
     const dstr = fmtDate(dateAddedOf(r));
     const subParts = [TYPE_LABELS[r.k], yr, (dstr!=='—'?dstr:'')].filter(Boolean).join(' · ');
@@ -1321,9 +1342,12 @@ function renderTable(){
       <td class="col-rating"><div class="ratecell">${stars}</div></td>
     </tr>`;
   }).join('') : `<tr><td colspan="7"><div class="empty"><b>Nothing here</b>Try a different filter or search.</div></td></tr>`;
+  const unratedChip = S.unratedOnly
+    ? `<button class="pill" data-clear-unrated="1" aria-pressed="true" style="background:var(--sig);color:#fff;border-color:var(--sig)">Unrated only ✕</button>`
+    : '';
   return `<div class="tablewrap">
     <div class="table-top">
-      <div class="type-pills">${pills}</div>
+      <div class="type-pills">${pills}${unratedChip}</div>
       <div class="table-tools">${sortSel}</div>
       <div class="table-meta">${total} works</div>
     </div>
@@ -1436,17 +1460,6 @@ function computeCategoryStats(k, filter){
     const gaps = items.filter(i=>i.yearReleased && i.dateWatched)
       .map(i=>Number(String(i.dateWatched).slice(0,4)) - i.yearReleased);
     extra.avgGap = gaps.length ? gaps.reduce((a,b)=>a+b,0)/gaps.length : null;
-  } else if(k==='games'){
-    const ss = {};
-    items.forEach(i=>{ if(i.studioStatus) ss[i.studioStatus]=(ss[i.studioStatus]||0)+1; });
-    extra.studioStatus = ss;
-    const pctVals = items.map(i=>+i.mainStoryPct).filter(v=>!isNaN(v));
-    extra.avgPct = pctVals.length ? pctVals.reduce((a,b)=>a+b,0)/pctVals.length : null;
-  } else if(k==='tv'){
-    const pctVals = items.map(i=>+i.watchedPct).filter(v=>!isNaN(v));
-    extra.avgPct = pctVals.length ? pctVals.reduce((a,b)=>a+b,0)/pctVals.length : null;
-    const seasonVals = items.map(i=>+i.seasons).filter(v=>!isNaN(v));
-    extra.avgSeasons = seasonVals.length ? seasonVals.reduce((a,b)=>a+b,0)/seasonVals.length : null;
   } else if(k==='books'){
     const dc = {};
     items.forEach(i=>{
@@ -1508,13 +1521,6 @@ function renderCategoryStats(k){
   if(k==='films'){
     extraLabel = 'Viewing habits';
     extraChips = `${s.extra.avgGap!=null?`<span class="stats-chip">${s.extra.avgGap.toFixed(1)} yr avg gap between release &amp; watch</span>`:''}`;
-  } else if(k==='games'){
-    extraLabel = 'Studio size &amp; completion';
-    const chips = Object.entries(s.extra.studioStatus||{}).map(([lbl,n])=>`<span class="stats-chip">${esc(lbl)}: ${n}</span>`).join('');
-    extraChips = `${chips}${s.extra.avgPct!=null?`<span class="stats-chip">${Math.round(s.extra.avgPct)}% avg story completion</span>`:''}`;
-  } else if(k==='tv'){
-    extraLabel = 'Completion';
-    extraChips = `${s.extra.avgPct!=null?`<span class="stats-chip">${Math.round(s.extra.avgPct)}% avg watched</span>`:''}${s.extra.avgSeasons!=null?`<span class="stats-chip">${s.extra.avgSeasons.toFixed(1)} avg seasons</span>`:''}`;
   } else if(k==='books'){
     extraLabel = 'Published by decade';
     extraChips = s.extra.decades.map(([d,n])=>`<span class="stats-chip">${d}s: ${n}</span>`).join('') || '<span class="stat-label">No publication years logged</span>';
@@ -1544,10 +1550,10 @@ function renderCategoryStats(k){
         <div class="stats-h">Top ${creatorLabel} &mdash; tap to filter</div>
         <div class="stats-chips">${creatorChips || '<span class="stat-label">No data</span>'}</div>
       </div>
-      <div class="stats-tile wide">
+      ${extraLabel ? `<div class="stats-tile wide">
         <div class="stats-h">${extraLabel}</div>
         <div class="stats-chips">${extraChips}</div>
-      </div>
+      </div>` : ''}
     </div>`;
 }
 
@@ -2056,22 +2062,26 @@ function fieldFormHTML(c){
 }
 /* which chrome shows per step: search = bare, detail = rating+date only,
    form = the old fully editable sheet (edit & manual add) */
+/* status is a 3-way choice for every kind; "In progress" also feeds Currently */
+const STATUS_OPTS = [['completed','Completed'],['inProgress','In progress'],['dnf','Did not finish']];
+function renderStatusPick(){
+  const cur = S.editing.status || 'completed';
+  $('#statusPick').innerHTML = STATUS_OPTS.map(([k,l])=>
+    `<button type="button" data-status="${k}" aria-pressed="${cur===k}">${l}</button>`).join('');
+}
 function setEditChrome(mode){
   const on = mode!=='search';
   $('#coverRow').style.display = mode==='form' ? 'flex' : 'none';
   $('#ratingWrap').style.display = on ? 'block' : 'none';
   $('#saveEdit').style.display = on ? 'block' : 'none';
-  const ipVerb = {books:'Currently reading', tv:'Currently watching', games:'Currently playing'}[S.tab];
-  $('#inProgressWrap').style.display = (on && ipVerb) ? 'block' : 'none';
-  if(ipVerb){
-    $('#inProgressBtn').textContent = ipVerb;
-    $('#inProgressBtn').setAttribute('aria-pressed', S.editing.inProgress ? 'true' : 'false');
-  }
+  $('#statusWrap').style.display = on ? 'block' : 'none';
+  if(on) renderStatusPick();
 }
 function openEdit(item){
   if(!S.session){ S.authMode = S.authMode || 'up'; openAuth(); return; }
   const c = COLLECTIONS[S.tab];
-  S.editing = item ? {...item} : {id:null, rating:null, rx:null, ry:null};
+  S.editing = item ? {...item} : {id:null, rating:null, rx:null, ry:null, status:'completed'};
+  if(!S.editing.status) S.editing.status = 'completed';
   /* one-way conversion of an old rating: y from the score, x unknown */
   if(S.editing.ry==null && S.editing.rating!=null){
     S.editing.ry = Math.round((S.editing.rating/c.scale)*200-100);
@@ -2128,7 +2138,7 @@ async function openAddDetail(picked){
   S.addStep = 'detail';
   const crK = creatorField(k), yrK = yearField(k);
   e.name = picked.title;
-  e[yrK] = picked.year ? +picked.year : null;
+  if(k!=='tv') e[yrK] = picked.year ? +picked.year : null;
   $('#fields').innerHTML = `<p class="note">Loading details…</p>`;
   let desc='', creator='', cover=null;
   try{
@@ -2143,8 +2153,7 @@ async function openAddDetail(picked){
       const dj = await mediaApi({action:'detail', kind:k, id:picked.id});
       creator = (dj.networks||[]).map(n=>n.name).slice(0,2).join('/');
       e.genre = (dj.genres||[]).map(g=>g.name).join('/');
-      e.seasons = dj.number_of_seasons || null;
-      if(dj.status && dj.status!=='Returning Series') e.lastSeasonYear = +String(dj.last_air_date||'').slice(0,4) || null;
+      e.released = dj.first_air_date || (picked.raw && picked.raw.first_air_date) || null;
     } else if(k==='games'){
       cover = picked.raw.background_image || null;
       e.genre = (picked.raw.genres||[]).map(g=>g.name).join('/');
@@ -2176,7 +2185,7 @@ function renderAddDetail(){
   const crK = creatorField(k), yrK = yearField(k);
   const dateF = (c.recentFields||[])[0];
   const dateLbl = {dateWatched:'Date watched', datePlayed:'Date played', dateRead:'Date read'}[dateF] || 'Date';
-  const sub = [e[crK], e[yrK]].filter(Boolean).join(' · ');
+  const sub = [e[crK], itemYear(k, e)].filter(Boolean).join(' · ');
   $('#fields').innerHTML = `
     <div class="add-preview">
       ${e.coverUrl?`<img class="add-preview-cover" src="${esc(e.coverUrl)}" alt="">`:'<div class="add-preview-cover"></div>'}
@@ -2203,6 +2212,8 @@ function readEdit(){
     if(v==='') { o[f.k]=null; return; }
     o[f.k] = (f.t==='number' && !isNaN(+v)) ? +v : v;
   });
+  o.status = o.status || 'completed';
+  o.inProgress = o.status==='inProgress';
   return o;
 }
 async function saveEdit(){
@@ -2306,6 +2317,7 @@ $('#list').addEventListener('click', e=>{
   if(qa){ quickAddCurrent(qa.dataset.quickAdd); return; }
   const tp = e.target.closest('[data-type]');
   if(tp){ S.typeFilter = tp.dataset.type; render(); return; }
+  if(e.target.closest('[data-clear-unrated]')){ S.unratedOnly = false; render(); return; }
   const so = e.target.closest('[data-sort]');
   if(so){
     const key = so.dataset.sort;
@@ -2355,6 +2367,20 @@ $('#delEdit').addEventListener('click', delEdit);
 $('#closeSet').addEventListener('click', closeSheets);
 $('#pfCancel').addEventListener('click', closeSheets);
 $('#pfSave').addEventListener('click', saveProfileEdit);
+/* ---- secret dev menu (tap the version stamp) ---- */
+$('#verStamp').addEventListener('click', ()=>{
+  const b = $('#devUnratedBtn');
+  b.setAttribute('aria-pressed', S.unratedOnly ? 'true' : 'false');
+  b.textContent = S.unratedOnly ? 'Unrated only — on' : 'Show only unrated items';
+  openSheet('#devSheet');
+});
+$('#devUnratedBtn').addEventListener('click', ()=>{
+  S.unratedOnly = !S.unratedOnly;
+  S.view = 'home';
+  closeSheets(); render(); window.scrollTo({top:0});
+  toast(S.unratedOnly ? 'Filtering to unrated' : 'Showing all');
+});
+$('#devClose').addEventListener('click', closeSheets);
 $('#openThemeBtn').addEventListener('click', ()=>{
   closeSheets(); renderThemeGrid(); openSheet('#themeSheet');
 });
@@ -2495,9 +2521,11 @@ $('#fields').addEventListener('click', e=>{
   if(S.addStep==='search') openAddDetail(picked);
   else fillFromSuggestion(S.tab, picked);
 });
-$('#inProgressBtn').addEventListener('click', ()=>{
-  S.editing.inProgress = !S.editing.inProgress;
-  $('#inProgressBtn').setAttribute('aria-pressed', S.editing.inProgress ? 'true' : 'false');
+$('#statusPick').addEventListener('click', e=>{
+  const b = e.target.closest('[data-status]'); if(!b) return;
+  S.editing.status = b.dataset.status;
+  S.editing.inProgress = S.editing.status==='inProgress';
+  renderStatusPick();
 });
 
 /* ================= accounts (supabase) ================= */
@@ -2506,30 +2534,39 @@ $('#inProgressBtn').addEventListener('click', ()=>{
 function rowToItem(r){
   const k = r.kind, ex = r.extra || {};
   const it = {...ex, id:r.id, name:r.name, coverUrl:r.cover_url||null,
-    rx:r.rx, ry:r.ry, desc:r.summary||null, genre:r.genre||null, inProgress:!!r.in_progress};
+    rx:r.rx, ry:r.ry, desc:r.summary||null, genre:r.genre||null,
+    status: ex.status || (r.in_progress ? 'inProgress' : 'completed')};
+  it.inProgress = it.status==='inProgress';
   it[creatorField(k)] = r.creator || null;
-  it[yearField(k)] = r.year || null;
+  /* TV keeps its full first-episode date in extra.released; the year column is
+     kept as a fallback for pre-change rows (was "first season" year). */
+  if(k==='tv'){ it.released = ex.released || null; it.releasedYear = r.year || null; }
+  else { it[yearField(k)] = r.year || null; }
   const dateF = (COLLECTIONS[k].recentFields||[])[0];
   if(dateF) it[dateF] = r.date_logged || null;
   return it;
 }
 function itemToRow(k, o){
   const dateF = (COLLECTIONS[k].recentFields||[])[0];
-  const known = new Set(['id','name','coverUrl','rx','ry','desc','genre','inProgress','rating',
+  /* status + tv's released ride in extra (no dedicated columns); releasedYear
+     is display-only, never persisted; in_progress column stays in sync. */
+  const known = new Set(['id','name','coverUrl','rx','ry','desc','genre','inProgress','rating','releasedYear',
     creatorField(k), yearField(k), dateF]);
   const extra = {};
   Object.keys(o).forEach(key=>{ if(!known.has(key) && o[key]!=null) extra[key]=o[key]; });
-  const y = +o[yearField(k)];
+  const yc = (k==='tv')
+    ? (o.released ? +String(o.released).slice(0,4) : (o.releasedYear!=null ? +o.releasedYear : NaN))
+    : +o[yearField(k)];
   const clamp = v => v==null ? null : Math.max(-100, Math.min(100, Math.round(v)));
   return {
     user_id: S.session.user.id, kind: k,
     name: o.name, cover_url: o.coverUrl||null,
     creator: o[creatorField(k)]||null,
-    year: (Number.isFinite(y) && y) ? Math.round(y) : null,
+    year: (Number.isFinite(yc) && yc) ? Math.round(yc) : null,
     date_logged: o[dateF]||null,
     rx: clamp(o.rx), ry: clamp(o.ry),
     summary: o.desc||null, genre: o.genre||null,
-    in_progress: !!o.inProgress, extra
+    in_progress: o.status==='inProgress', extra
   };
 }
 async function loadFromSupa(){
