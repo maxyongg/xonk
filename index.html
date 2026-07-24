@@ -720,7 +720,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version">xonk v2026.07.24m</div>
+<div class="version">xonk v2026.07.24n</div>
 
 <script>
 /* ================= config ================= */
@@ -1712,7 +1712,10 @@ function renderProfile(target){
     const p = pfPos(q.x==null?0:q.x, q.y);
     const {col, css} = pfDotStyle(q);
     const rate = q.legacy ? `Quality ${fmtSigned(q.y)}` : `E ${fmtSigned(q.x)} · Q ${fmtSigned(q.y)}`;
-    return `<span class="pf-dot${q.legacy?' legacy':''}" data-k="${r.k}" data-open="${r.k}:${r.item.id}"
+    /* the rating map is view-only: a dot shows its tooltip on hover/tap but
+       never opens the editor (no data-open) — otherwise a tap on touch, which
+       has no hover, would jump straight into editing. Edit from the table. */
+    return `<span class="pf-dot${q.legacy?' legacy':''}" data-k="${r.k}"
       data-t="${esc(r.item.name||'Untitled')}" data-m="${esc(TYPE_LABELS[r.k].toUpperCase()+' · '+rate)}"
       data-c="${col}"${q.legacy?' data-lg="1"':''}
       style="left:${p.left.toFixed(2)}%;top:${p.top.toFixed(2)}%;${css}"></span>`;
@@ -2270,6 +2273,8 @@ $('#q').addEventListener('input', e=>{
   render();
 });
 $('#list').addEventListener('click', e=>{
+  /* tap away from a rating-map dot dismisses its tooltip (touch has no mouseout) */
+  if(!e.target.closest('.pf-dot')) pfTipHide();
   if(e.target.closest('#welcomeIn')){ S.authMode='in'; openAuth(); return; }
   if(e.target.closest('#welcomeUp')){ S.authMode='up'; openAuth(); return; }
   if(e.target.closest('#welcomeDemo')){ enterDemo(); return; }
