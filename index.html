@@ -794,7 +794,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.25a</div>
+<div class="version" id="verStamp">xonk v2026.07.25b</div>
 
 <script>
 /* ================= config ================= */
@@ -1056,6 +1056,7 @@ async function runSuggest(k, q){
 }
 async function fillFromSuggestion(k, picked){
   const box = $('#titleSuggest'); if(box) box.innerHTML='';
+  if(picked.id!=null) S.editing.srcId = String(picked.id); // external source id → extra.srcId, for cross-user matching
   const setField = (key,val)=>{
     const el = $('#fields').querySelector(`[data-k="${key}"]`);
     if(el && val!=null && val!=='') el.value = val;
@@ -2192,6 +2193,7 @@ async function openAddDetail(picked){
   S.addStep = 'detail';
   const crK = creatorField(k), yrK = yearField(k);
   e.name = picked.title;
+  if(picked.id!=null) e.srcId = String(picked.id); // external source id → extra.srcId, for cross-user matching
   if(k!=='tv') e[yrK] = picked.year ? +picked.year : null;
   $('#fields').innerHTML = `<p class="note">Loading details…</p>`;
   let desc='', creator='', cover=null;
