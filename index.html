@@ -606,6 +606,14 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   transform:translate(-50%,-50%);pointer-events:none;
 }
 .quad-dot.legacy{border-style:dashed}
+/* the last-rated benchmark: a filled dot in its own colour, ringed white so it
+   reads against the same-coloured field behind it (vs your hollow cream pick) */
+.quad-bench{position:absolute;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);
+  border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 1px 3px rgba(0,0,0,.5);pointer-events:none;z-index:1}
+.quad-bench-cap{display:flex;align-items:center;gap:7px;max-width:320px;margin:8px auto 0;
+  font-family:var(--font-body);font-size:11px;color:var(--mute);line-height:1.35}
+.quad-bench-cap b{color:var(--ink);font-weight:600;margin-left:auto;padding-left:8px;white-space:nowrap}
+.quad-bench-swatch{width:11px;height:11px;border-radius:50%;flex:0 0 auto;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
 .quad-chip{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
 .quad-chip.legacy{background:none!important;border-width:3px}
 .quad-foot{display:flex;align-items:center;gap:10px;margin:8px auto 0;max-width:320px}
@@ -786,7 +794,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.24q</div>
+<div class="version" id="verStamp">xonk v2026.07.25a</div>
 
 <script>
 /* ================= config ================= */
@@ -900,7 +908,7 @@ const S = {
   cfg:{theme:'museum'},
   editing:null, statsCat:'overview', statsFilter:null,
   pfFilter:'all', profile:null, demoProfile:null,
-  people:null, profileTarget:null, unratedOnly:false
+  people:null, profileTarget:null, unratedOnly:false, lastRated:null
 };
 const TYPE_LABELS = {games:'Game', tv:'TV', films:'Film', books:'Book'};
 function creatorField(k){ return {films:'director',games:'developer',tv:'network',books:'author'}[k]; }
@@ -2276,6 +2284,7 @@ async function saveEdit(){
     const arr = S.data[S.tab].items;
     const ix = arr.findIndex(x=>x.id===it.id);
     if(ix>=0) arr[ix]=it; else arr.unshift(it);
+    if(quadOf(it, COLLECTIONS[S.tab].scale)) S.lastRated = {k:S.tab, id:it.id}; // benchmark
     S.people = null; // your card's stats in the directory are now stale
     closeSheets(); render();
     toast(o.id ? 'Saved' : 'Added');
@@ -2577,7 +2586,36 @@ function paintQuadCanvas(){
   }
   ctx.putImageData(img, 0, 0);
 }
+/* the work you rated most recently, used as a benchmark in the picker. Prefers
+   the rating remembered this session, else the newest-added rated item. */
+function lastRatedItem(excludeId){
+  const lr = S.lastRated;
+  if(lr){
+    const it = (S.data[lr.k]&&S.data[lr.k].items||[]).find(x=>x.id===lr.id);
+    if(it && it.id!==excludeId && quadOf(it, COLLECTIONS[lr.k].scale)) return {k:lr.k, item:it};
+  }
+  let best=null, bestT='';
+  ['films','games','tv','books'].forEach(k=>{
+    (S.data[k]&&S.data[k].items||[]).forEach(it=>{
+      if(it.id===excludeId || !quadOf(it, COLLECTIONS[k].scale)) return;
+      const t = String(it.createdAt||'');
+      if(t>bestT){ bestT=t; best={k, item:it}; }
+    });
+  });
+  return best;
+}
 function renderQuadPicker(){
+  const bench = lastRatedItem(S.editing && S.editing.id);
+  let benchDot = '', benchCap = '';
+  if(bench){
+    const q = quadOf(bench.item, COLLECTIONS[bench.k].scale);
+    const bx = q.x==null?0:q.x, by = q.y, col = quadColor(bx, by);
+    const left = ((bx+100)/200*100).toFixed(1), top = ((100-by)/200*100).toFixed(1);
+    benchDot = `<div class="quad-bench" style="left:${left}%;top:${top}%;background:${col}"></div>`;
+    const rt = q.x==null ? `Q ${fmtSigned(by)}` : `${fmtSigned(bx)} · ${fmtSigned(by)}`;
+    benchCap = `<div class="quad-bench-cap"><span class="quad-bench-swatch" style="background:${col}"></span>
+      Last rated · ${esc(bench.item.name)}<b>${rt}</b></div>`;
+  }
   $('#ratepick').innerHTML = `
     <div class="quad" id="quadArea">
       <canvas class="quad-canvas" id="quadCanvas" aria-hidden="true"></canvas>
@@ -2586,13 +2624,15 @@ function renderQuadPicker(){
       <span class="quad-lab bottom">Poorly made</span>
       <span class="quad-lab left">Didn't enjoy</span>
       <span class="quad-lab right">Enjoyed</span>
+      ${benchDot}
       <div class="quad-dot" id="quadDot" style="display:none"></div>
     </div>
     <div class="quad-foot">
       <span class="quad-chip" id="quadChip" style="display:none"></span>
       <span class="quad-read" id="quadRead"></span>
       <button type="button" class="quad-clear" id="quadClear">Clear</button>
-    </div>`;
+    </div>
+    ${benchCap}`;
   paintQuadCanvas();
   updateQuadUI();
 }
@@ -2695,6 +2735,7 @@ function rowToItem(r){
     rx:r.rx, ry:r.ry, desc:r.summary||null, genre:r.genre||null,
     status: ex.status || (r.in_progress ? 'inProgress' : 'completed')};
   it.inProgress = it.status==='inProgress';
+  it.createdAt = r.created_at || null;   // recency, for the "last rated" benchmark
   it[creatorField(k)] = r.creator || null;
   /* TV keeps its full first-episode date in extra.released; the year column is
      kept as a fallback for pre-change rows (was "first season" year). */
@@ -2708,7 +2749,7 @@ function itemToRow(k, o){
   const dateF = (COLLECTIONS[k].recentFields||[])[0];
   /* status + tv's released ride in extra (no dedicated columns); releasedYear
      is display-only, never persisted; in_progress column stays in sync. */
-  const known = new Set(['id','name','coverUrl','rx','ry','desc','genre','inProgress','rating','releasedYear',
+  const known = new Set(['id','name','coverUrl','rx','ry','desc','genre','inProgress','rating','releasedYear','createdAt',
     creatorField(k), yearField(k), dateF]);
   const extra = {};
   Object.keys(o).forEach(key=>{ if(!known.has(key) && o[key]!=null) extra[key]=o[key]; });
