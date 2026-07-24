@@ -456,7 +456,7 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .person-sub{font-family:var(--font-body);font-size:12px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .person-tag{font-family:var(--font-body);font-size:11px;color:var(--mute);opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* a profile you don't own is read-only: nothing in it is clickable */
-.pf.readonly .pf-cc,.pf.readonly .pf-fc,.pf.readonly .pf-act,.pf.readonly .pf-dot{cursor:default}
+.pf.readonly .pf-dot{cursor:default}
 
 @media(max-width:1024px){
   .pf-hero{grid-template-columns:1fr}
@@ -503,6 +503,20 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
   transform:translateY(100%);transition:transform .22s ease;
 }
 .sheet.on{transform:translateY(0)}
+/* centered modal (item page) — a standalone pop-up rather than a bottom sheet */
+.modal{
+  position:fixed;left:50%;top:50%;z-index:51;
+  width:min(460px, calc(100vw - 28px));max-height:88vh;overflow-y:auto;
+  background:var(--ink-2);border:1px solid var(--line);border-radius:18px;
+  padding:22px 22px calc(20px + var(--safe-b));
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+  transform:translate(-50%,-50%) scale(.97);opacity:0;pointer-events:none;
+  transition:transform .18s ease, opacity .18s ease;
+}
+.modal.on{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+@media(max-width:520px){
+  .modal{width:calc(100vw - 22px);max-height:90vh;border-radius:16px;padding:20px 18px calc(18px + var(--safe-b))}
+}
 .grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:6px auto 14px}
 .sheet h2{font-family:var(--font-head);font-weight:700;font-size:17px;margin:0 0 14px;letter-spacing:-.01em}
 .theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
@@ -534,6 +548,29 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .add-preview-sub{font-family:var(--font-body);font-size:13px;color:var(--mute);margin-top:4px}
 .add-desc{font-family:var(--font-body);font-size:12.5px;line-height:1.55;color:var(--mute);
   margin:0 0 14px;border-left:2px solid var(--line);padding-left:10px}
+/* ---------- item page (read view) ---------- */
+.ip-hero{display:flex;gap:16px;align-items:flex-start}
+.ip-cover{width:96px;height:140px;border-radius:10px;flex:0 0 auto;background-size:cover;background-position:center;
+  background-color:var(--ink-3);border:1px solid var(--line)}
+.ip-hmeta{flex:1;min-width:0}
+.ip-type{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.ip-title{font-family:var(--font-head);font-weight:700;font-size:22px;line-height:1.15;letter-spacing:-.01em;margin:5px 0 0}
+.ip-sub{font-family:var(--font-body);font-size:13px;color:var(--mute);margin-top:6px;overflow-wrap:anywhere}
+.ip-rate{display:flex;align-items:center;gap:9px;margin-top:13px;flex-wrap:wrap}
+.ip-rate .qswatch{width:20px;height:20px}
+.ip-rateval{font-family:var(--font-body);font-size:13px;color:var(--ink)}
+.ip-status{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:4px 9px;border-radius:999px;background:var(--ink-3);color:var(--ink)}
+.ip-status.inProgress{background:var(--acid);color:var(--on-accent)}
+.ip-status.dnf{background:var(--sig);color:#fff}
+.ip-desc{font-family:var(--font-body);font-size:13.5px;line-height:1.6;color:var(--ink);opacity:.85;
+  margin:16px 0 0;border-left:2px solid var(--line);padding-left:12px}
+.ip-desc.pending{opacity:.5;font-style:italic}
+.ip-meta{margin-top:16px;border-top:1px solid var(--line)}
+.ip-row{display:flex;gap:14px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.ip-k{flex:0 0 116px;font-family:var(--font-body);font-size:11px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--mute);padding-top:2px}
+.ip-v{flex:1;min-width:0;font-family:var(--font-body);font-size:14px;color:var(--ink);overflow-wrap:anywhere}
 label.f,div.f{display:block;margin-bottom:12px}
 label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--mute);
   text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px}
@@ -663,6 +700,15 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   </div>
 </div>
 
+<!-- item page (read view) — centered modal -->
+<div class="modal" id="itemSheet" role="dialog" aria-modal="true">
+  <div id="itemBody"></div>
+  <div class="acts">
+    <button class="btn ghost" id="itemClose">Close</button>
+    <button class="btn primary" id="itemAction">Edit</button>
+  </div>
+</div>
+
 <!-- settings sheet -->
 <div class="sheet" id="setSheet" role="dialog" aria-modal="true">
   <div class="grab"></div>
@@ -740,7 +786,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.24o</div>
+<div class="version" id="verStamp">xonk v2026.07.24q</div>
 
 <script>
 /* ================= config ================= */
@@ -2251,7 +2297,7 @@ async function delEdit(){
 function openSheet(sel){ $('#scrim').classList.add('on'); $(sel).classList.add('on'); }
 function closeSheets(){
   $('#scrim').classList.remove('on');
-  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.sheet, .modal').forEach(s=>s.classList.remove('on'));
 }
 function openSet(){
   renderAcct();
@@ -2259,10 +2305,111 @@ function openSet(){
 }
 
 /* ================= events ================= */
+/* ---- item page: a centered pop-up with the work's rating + all metadata ---- */
+const STATUS_LABELS = {completed:'Completed', inProgress:'In progress', dnf:'Did not finish'};
+/* resolve the clicked item from the right dataset: your own library, or the
+   profile you're currently viewing (People directory). "own" drives whether the
+   action button edits it or offers to add it to your list. */
 function openItem(k, id){
-  const item = (S.data[k]&&S.data[k].items||[]).find(x=>x.id===id);
+  let item = (S.data[k]&&S.data[k].items||[]).find(x=>x.id===id);
+  let own = !!item;
+  if(!item && S.view==='user' && S.people){
+    const d = S.people.dataByUid[S.profileTarget];
+    item = (d&&d[k]&&d[k].items||[]).find(x=>x.id===id);
+  }
   if(!item) return;
-  S.tab = k; openEdit(item);
+  openItemPage(k, item, own);
+}
+function openItemPage(k, item, own){
+  S.viewingItem = {k, id:item.id, item, own};
+  const c = COLLECTIONS[k];
+  const q = quadOf(item, c.scale);
+  const yr = itemYear(k, item);
+  const sub = [item[creatorField(k)], yr].filter(Boolean).join(' · ');
+  const status = item.status || 'completed';
+  const rateLine = q
+    ? (q.x==null ? `Quality ${fmtSigned(q.y)} · enjoyment not set`
+                 : `Enjoyment ${fmtSigned(q.x)} · Quality ${fmtSigned(q.y)}`)
+    : 'Not rated yet';
+  /* metadata list: every field with a value, minus the ones already in the hero */
+  const skip = new Set(['name','coverUrl', creatorField(k), yearField(k)]);
+  const rows = c.fields.filter(f=>!skip.has(f.k) && item[f.k]!=null && item[f.k]!=='')
+    .map(f=>{
+      const v = f.t==='date' ? fmtDate(item[f.k]) : esc(String(item[f.k]));
+      return `<div class="ip-row"><span class="ip-k">${f.l}</span><span class="ip-v">${v}</span></div>`;
+    }).join('');
+  const descHTML = item.desc
+    ? `<p class="ip-desc" id="ipDesc">${esc(item.desc)}</p>`
+    : `<p class="ip-desc pending" id="ipDesc">Fetching description…</p>`;
+  $('#itemBody').innerHTML = `
+    <div class="ip-hero">
+      <div class="ip-cover" style="${bgStyle(item)}"></div>
+      <div class="ip-hmeta">
+        <div class="ip-type">${TYPE_LABELS[k]}</div>
+        <h2 class="ip-title">${esc(item.name||'Untitled')}</h2>
+        ${sub?`<div class="ip-sub">${esc(sub)}</div>`:''}
+        <div class="ip-rate">
+          ${quadSwatchHTML(q)}
+          <span class="ip-rateval">${rateLine}</span>
+          ${status!=='completed'?`<span class="ip-status ${status}">${STATUS_LABELS[status]||''}</span>`:''}
+        </div>
+      </div>
+    </div>
+    ${descHTML}
+    ${rows?`<div class="ip-meta">${rows}</div>`:''}`;
+  const act = $('#itemAction');
+  act.textContent = own ? 'Edit' : 'Add to my list';
+  openSheet('#itemSheet');
+  if(!item.desc) loadDescription(k, item, own);
+}
+/* pull a synopsis from the source APIs for items that don't have one stored;
+   caches it on the item and (for your own items) persists it quietly. */
+async function loadDescription(k, item, own){
+  const desc = await fetchDescription(k, item);
+  const el = $('#ipDesc');
+  if(!S.viewingItem || S.viewingItem.id!==item.id) return; // modal moved on
+  if(desc){
+    item.desc = desc;
+    if(el){ el.textContent = desc; el.classList.remove('pending'); }
+    if(own && S.session){ try{ await supa.from('items').update({summary:desc}).eq('id', item.id); }catch(_){ } }
+  } else if(el){
+    el.remove();
+  }
+}
+async function fetchDescription(k, item){
+  const title = cleanSearchTitle(item.name);
+  if(!title) return null;
+  try{
+    const results = await searchSuggestions(k, title);
+    if(!results.length) return null;
+    const yr = itemYear(k, item);
+    const pick = (yr && results.find(r=>String(r.year)===String(yr))) || results[0];
+    if(k==='films' || k==='tv') return (pick.raw && pick.raw.overview) || null;
+    if(k==='games'){
+      const dj = await mediaApi({action:'detail', kind:'games', id:pick.id});
+      return (dj && (dj.description_raw || dj.description)) || null;
+    }
+    if(k==='books' && pick.raw && pick.raw.key){
+      const wr = await fetch(`https://openlibrary.org${pick.raw.key}.json`);
+      if(wr.ok){ const wj = await wr.json(); return typeof wj.description==='string' ? wj.description : (wj.description && wj.description.value) || null; }
+    }
+  }catch(e){}
+  return null;
+}
+/* start a fresh add pre-filled from another user's item, so you can rate &
+   log your own copy. */
+function addFromViewed(){
+  const v = S.viewingItem; if(!v) return;
+  S.tab = v.k;
+  closeSheets();
+  openEdit(null);
+  const copy = {...v.item};
+  delete copy.id; copy.rating=null; copy.rx=null; copy.ry=null;
+  copy.status='completed'; copy.inProgress=false;
+  const dateF = (COLLECTIONS[v.k].recentFields||[])[0]; if(dateF) copy[dateF]=null;
+  Object.assign(S.editing, copy);
+  $('#typePick').style.display='none';
+  renderAddManual();
 }
 async function logFinished(k, id){
   if(!S.session){ openAuth(); return; }
@@ -2367,6 +2514,17 @@ $('#delEdit').addEventListener('click', delEdit);
 $('#closeSet').addEventListener('click', closeSheets);
 $('#pfCancel').addEventListener('click', closeSheets);
 $('#pfSave').addEventListener('click', saveProfileEdit);
+$('#itemClose').addEventListener('click', closeSheets);
+$('#itemAction').addEventListener('click', ()=>{
+  const v = S.viewingItem; if(!v) return;
+  if(v.own){
+    const item = (S.data[v.k]&&S.data[v.k].items||[]).find(x=>x.id===v.id);
+    if(!item) return;
+    S.tab = v.k; closeSheets(); openEdit(item);
+  } else {
+    addFromViewed();
+  }
+});
 /* ---- secret dev menu (tap the version stamp) ---- */
 $('#verStamp').addEventListener('click', ()=>{
   const b = $('#devUnratedBtn');
