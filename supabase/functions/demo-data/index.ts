@@ -24,12 +24,18 @@ const json = (body: unknown, status = 200) =>
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  const { data: prof } = await supa.from("profiles").select("id").eq("username", DEMO_USERNAME).single();
+  const { data: prof } = await supa
+    .from("profiles")
+    .select("id,username,display_name,tagline,created_at")
+    .eq("username", DEMO_USERNAME)
+    .single();
   if (!prof) return json({ error: "demo user not configured" }, 404);
   const { data: items, error } = await supa
     .from("items")
     .select("id,kind,name,cover_url,creator,year,date_logged,rx,ry,summary,genre,in_progress,extra")
     .eq("user_id", prof.id);
   if (error) return json({ error: error.message }, 500);
-  return json({ items });
+  // the profile powers the demo's "You" page — id stays server-side
+  const { id: _id, ...profile } = prof;
+  return json({ items, profile });
 });

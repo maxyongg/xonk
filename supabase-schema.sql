@@ -11,6 +11,10 @@ create table if not exists public.profiles (
   constraint username_format check (username ~ '^[a-z0-9_]{3,20}$')
 );
 
+-- editable identity for the profile page; both optional, username is the fallback
+alter table public.profiles add column if not exists display_name text;
+alter table public.profiles add column if not exists tagline text;
+
 -- every rated/logged piece of media, all users, one table
 create table if not exists public.items (
   id uuid primary key default gen_random_uuid(),
