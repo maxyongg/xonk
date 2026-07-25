@@ -60,6 +60,29 @@ create policy "profiles readable" on public.profiles for select using (true);
 drop policy if exists "update own profile" on public.profiles;
 create policy "update own profile" on public.profiles for update using (auth.uid() = id);
 
+-- People directory in one row per account, so listing everybody no longer means
+-- downloading everybody's library. Ratings live in ry (the JSON import converted
+-- the old per-kind `rating` scale to ry at import time), so "rated" is simply a
+-- non-null ry, and no per-kind scale conversion is needed here.
+-- security invoker, so RLS still applies: profiles are public, items need a session.
+create or replace function public.people_directory()
+returns table (
+  id uuid, username text, display_name text, tagline text, created_at timestamptz,
+  works int, rated int, avg_e float8, avg_q float8
+)
+language sql stable security invoker set search_path = public as $$
+  select p.id, p.username, p.display_name, p.tagline, p.created_at,
+         count(i.id)::int,
+         count(i.ry)::int,
+         (avg(i.rx) filter (where i.rx is not null and i.ry is not null))::float8,
+         (avg(i.ry))::float8
+  from public.profiles p
+  left join public.items i on i.user_id = p.id
+  group by p.id, p.username, p.display_name, p.tagline, p.created_at
+  order by count(i.id) desc, p.username;
+$$;
+grant execute on function public.people_directory() to authenticated;
+
 -- any signed-in user can READ all items (this powers cross-user comparison);
 -- writes are strictly your own rows
 drop policy if exists "items readable" on public.items;

@@ -85,10 +85,19 @@ a plain select at the project's "Max rows" (1000) and doesn't say when it
 truncates. `loadPeople` skips the `summary` column since nothing there renders
 it.
 
-Still: every signed-in client downloads every account's items to compute People,
-profiles and Compare. Paging makes that correct, not cheap. At scale the
-per-user aggregate + pairwise similarity should move to a Postgres RPC / edge
-function so the browser fetches scores, not libraries.
+The directory is a Postgres aggregate (`people_directory()`), and a library is
+fetched only when you open that person — so the old (accounts × items) download
+on every People visit is gone.
+
+**Next, when needed.** Compare still needs both libraries client-side. The step
+after this is an RPC that does the *pairing* in SQL and returns only the shared
+rows, leaving the scoring in JS — same payload win, no formula duplicated while
+the lean penalty is still unsettled. Full server-side scoring is only forced by
+§3 (find-community), which has to rank you against every account at once; that's
+the point where the formula gets frozen into SQL, so settle the penalty first.
+The hard part is `tmPair`, not the arithmetic: the name-only tier needs a
+uniqueness count, and "each item pairs at most once" is a greedy assignment
+(`DISTINCT ON` / `row_number()`), not a plain join.
 
 ---
 

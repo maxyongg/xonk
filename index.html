@@ -855,7 +855,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.25f</div>
+<div class="version" id="verStamp">xonk v2026.07.25g</div>
 
 <script>
 /* ================= config ================= */
@@ -969,7 +969,9 @@ const S = {
   cfg:{theme:'museum'},
   editing:null, statsCat:'overview', statsFilter:null,
   pfFilter:'all', profile:null, demoProfile:null,
-  people:null, profileTarget:null, unratedOnly:false, lastRated:null
+  people:null, profileTarget:null, unratedOnly:false, lastRated:null,
+  userData:{},   // uid -> that person's library, filled only when you open them
+  userLoading:{} // uid -> in-flight fetch, so concurrent renders share one request
 };
 const TYPE_LABELS = {games:'Game', tv:'TV', films:'Film', books:'Book'};
 function creatorField(k){ return {films:'director',games:'developer',tv:'network',books:'author'}[k]; }
@@ -1747,7 +1749,7 @@ function buildProfileCtx(target){
     return {rows:allRows(), prof, uname, joined, isSelf:self, fromDirectory:false};
   }
   const prof = (S.people && S.people.byUid[target]) || null;
-  const data = (S.people && S.people.dataByUid[target]) || {};
+  const data = dataForUser(target) || {};
   return {
     rows: allRowsFrom(data), prof,
     uname: (prof&&prof.username) || 'user',
@@ -2049,37 +2051,48 @@ async function selectAll(build){
     if(res.data.length < SUPA_PAGE) return {data:out, error:null};
   }
 }
-/* One pass: pull all profiles + all items (RLS already lets an authenticated
-   user read both), then bucket items per user. Cached so opening any profile
-   from here is instant and needs no extra round-trip. `summary` is deliberately
-   not selected — it's the longest column by far and nothing here renders it;
-   the item page re-fetches a description on demand when it's missing. */
+/* The directory is one aggregate row per account from the people_directory()
+   RPC — counts and averages computed in Postgres. It used to download every
+   user's entire library just to render a list of names, which grew as
+   (accounts × items) on every single page load. Nobody's items are fetched
+   here any more; a library loads only when you open that person. */
 async function loadPeople(){
   try{
-    const [pr, it] = await Promise.all([
-      selectAll(()=>supa.from('profiles').select('id,username,display_name,tagline,created_at').order('id')),
-      selectAll(()=>supa.from('items').select('id,user_id,kind,name,cover_url,creator,year,date_logged,rx,ry,genre,in_progress,extra').order('id'))
-    ]);
-    if(pr.error) throw pr.error;
-    if(it.error) throw it.error;
-    const byUid = {}, dataByUid = {};
-    (pr.data||[]).forEach(p=>{
-      byUid[p.id] = p;
-      dataByUid[p.id] = {films:{items:[]}, games:{items:[]}, tv:{items:[]}, books:{items:[]}};
-    });
-    (it.data||[]).forEach(r=>{
-      const d = dataByUid[r.user_id];
-      if(d && d[r.kind]) d[r.kind].items.push(rowToItem(r));
-    });
-    const list = (pr.data||[]).slice().sort((a,b)=>
-      allRowsFrom(dataByUid[b.id]).length - allRowsFrom(dataByUid[a.id]).length
-      || String(a.username).localeCompare(String(b.username)));
-    S.people = {byUid, dataByUid, list};
+    const r = await supa.rpc('people_directory');
+    if(r.error) throw r.error;
+    const list = r.data || [], byUid = {};   // RPC already sorts: works desc, then username
+    list.forEach(p=>{ byUid[p.id] = p; });
+    S.people = {byUid, list};
   }catch(e){
-    S.people = {byUid:{}, dataByUid:{}, list:[]};
+    S.people = {byUid:{}, list:[]};
     toast('Couldn’t load people: ' + (e.message||e));
   }
   if(S.view==='people') renderPeople();
+}
+/* One person's library, fetched on demand and cached. `select('*')` here is
+   fine — it's one account, not all of them, and it brings the descriptions so
+   their item pages don't have to re-fetch one. */
+async function loadUserItems(uid){
+  if(S.userData[uid]) return S.userData[uid];
+  /* share the in-flight promise: render() can fire again before the first fetch
+     lands, and two requests for the same library is pure waste */
+  if(S.userLoading[uid]) return S.userLoading[uid];
+  S.userLoading[uid] = (async()=>{
+    const d = {films:{items:[]}, games:{items:[]}, tv:{items:[]}, books:{items:[]}};
+    const res = await selectAll(()=>supa.from('items').select('*').eq('user_id', uid).order('id'));
+    if(res.error) toast('Couldn’t load that list: ' + res.error.message);
+    else res.data.forEach(r=>{ if(d[r.kind]) d[r.kind].items.push(rowToItem(r)); });
+    /* cached even on failure, so a re-render can't spin fetching it again */
+    S.userData[uid] = d;
+    delete S.userLoading[uid];
+    return d;
+  })();
+  return S.userLoading[uid];
+}
+/* your own profile always reads your live library, never a second copy */
+function dataForUser(uid){
+  if(S.session && uid===S.session.user.id) return S.data;
+  return S.userData[uid] || null;
 }
 function renderPeople(){
   if(!S.session){ S.view='profile'; render(); return; }
@@ -2088,19 +2101,18 @@ function renderPeople(){
     loadPeople();
     return;
   }
+  /* stats come straight off the aggregate row — no items in memory to count */
   const cards = S.people.list.map(p=>{
-    const rows = allRowsFrom(S.people.dataByUid[p.id]);
-    const a = pfAvg(rows);
     const name = p.display_name || (p.username.charAt(0).toUpperCase()+p.username.slice(1));
     const me = p.id===S.session.user.id;
-    const tag = a.rated
-      ? `Avg E ${a.e!=null?fmtSigned(a.e):'–'} · Q ${a.q!=null?fmtSigned(a.q):'–'} · ${a.rated} rated`
+    const tag = p.rated
+      ? `Avg E ${p.avg_e!=null?fmtSigned(p.avg_e):'–'} · Q ${p.avg_q!=null?fmtSigned(p.avg_q):'–'} · ${p.rated} rated`
       : 'Nothing rated yet';
     return `<button class="person" data-user="${esc(p.id)}">
-      <span class="person-av" style="background:${quadColor(a.e==null?0:a.e, a.q==null?0:a.q)}">${esc(name.charAt(0).toUpperCase())}</span>
+      <span class="person-av" style="background:${quadColor(p.avg_e==null?0:p.avg_e, p.avg_q==null?0:p.avg_q)}">${esc(name.charAt(0).toUpperCase())}</span>
       <span class="person-main">
         <span class="person-nm">${esc(name)}${me?'<i class="person-you">You</i>':''}</span>
-        <span class="person-sub">@${esc(p.username)} · ${rows.length} works</span>
+        <span class="person-sub">@${esc(p.username)} · ${p.works} works</span>
         <span class="person-tag">${esc(tag)}</span>
       </span>
     </button>`;
@@ -2319,7 +2331,9 @@ function openCompare(target){
   const prof = S.people.byUid[target];
   if(!prof || prof.id===S.session.user.id) return; // never compare with yourself
   const them = prof.display_name || (prof.username.charAt(0).toUpperCase()+prof.username.slice(1));
-  const m = tasteMatch(allRows(), allRowsFrom(S.people.dataByUid[target]));
+  const theirs = dataForUser(target);
+  if(!theirs) return; // opened from their profile, so their library is already loaded
+  const m = tasteMatch(allRows(), allRowsFrom(theirs));
   $('#cmpBody').innerHTML = m.n ? tmPanelHTML(m, them, prof.username) : `
     <h2>You &amp; ${esc(them)}</h2>
     <p class="tm-hsub">@${esc(prof.username)}</p>
@@ -2336,7 +2350,15 @@ function render(){
   updateNavVis();
   if(S.view==='stats') renderStatsTab();
   else if(S.view==='people') renderPeople();
-  else if(S.view==='user') renderProfile(S.profileTarget);
+  else if(S.view==='user'){
+    /* their library isn't in memory until now — fetch it, then re-render */
+    const uid = S.profileTarget;
+    if(dataForUser(uid)) renderProfile(uid);
+    else {
+      $('#list').innerHTML = `<div class="empty" style="padding:60px 20px">Loading…</div>`;
+      loadUserItems(uid).then(()=>{ if(S.view==='user' && S.profileTarget===uid) render(); });
+    }
+  }
   else if(S.view==='profile') renderProfile(null);
   else renderHome();
   if(S.demo) $('#list').insertAdjacentHTML('afterbegin', `
@@ -2627,7 +2649,7 @@ function openItem(k, id){
   let item = (S.data[k]&&S.data[k].items||[]).find(x=>x.id===id);
   let own = !!item;
   if(!item && S.view==='user' && S.people){
-    const d = S.people.dataByUid[S.profileTarget];
+    const d = dataForUser(S.profileTarget);
     item = (d&&d[k]&&d[k].items||[]).find(x=>x.id===id);
   }
   if(!item) return;
@@ -3203,6 +3225,7 @@ function applySession(session){
     lastUid = null;
     S.profile = null;
     S.people = null; S.profileTarget = null;
+    S.userData = {}; S.userLoading = {}; // don't keep anyone's library across a sign-out
     setStatus('', 'Sign in');
     Object.keys(COLLECTIONS).forEach(k=>{ S.data[k] = {items:[]}; });
     render();

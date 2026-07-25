@@ -19,6 +19,10 @@ deploys immediately.**
     (`<user>@users.xonk.app`). "Confirm email" must stay OFF; no password recovery by design.
   - `items` RLS: any authed user **reads all rows** (powers People + cross-user features);
     writes only your own.
+  - **RPC `people_directory()`** returns one aggregate row per account (works, rated,
+    avg rx/ry) so the directory never downloads anyone's library. A profile's items
+    load on demand via `loadUserItems` into the `S.userData` cache. Both raw item
+    loads page through `selectAll` — PostgREST silently truncates at 1000 rows.
 - **Edge functions** (`supabase/functions/`, deployed via dashboard): `media-search`
   proxies TMDB/RAWG (secrets `TMDB_KEY`/`RAWG_KEY`; books use Open Library, keyless);
   `demo-data` is public and serves the demo account for the welcome screen.
