@@ -80,11 +80,15 @@ size to avoid tiny-list noise. Privacy/consent for surfacing matches.
 ## Backend notes
 
 Cross-user reads already work (`items` RLS `to authenticated using (true)`), so
-the raw material is there. At scale, per-user aggregation + pairwise similarity
-should move to a Postgres RPC / edge function rather than fanning out in the
-browser. Note `loadPeople` selects all items with no pagination — PostgREST caps
-a plain select at 1000 rows, so this silently truncates once the catalogue
-across all accounts passes that.
+the raw material is there. Both item loads page via `selectAll` — PostgREST caps
+a plain select at the project's "Max rows" (1000) and doesn't say when it
+truncates. `loadPeople` skips the `summary` column since nothing there renders
+it.
+
+Still: every signed-in client downloads every account's items to compute People,
+profiles and Compare. Paging makes that correct, not cheap. At scale the
+per-user aggregate + pairwise similarity should move to a Postgres RPC / edge
+function so the browser fetches scores, not libraries.
 
 ---
 

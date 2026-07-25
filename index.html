@@ -855,7 +855,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.25e</div>
+<div class="version" id="verStamp">xonk v2026.07.25f</div>
 
 <script>
 /* ================= config ================= */
@@ -2034,15 +2034,31 @@ function updateNavVis(){
   const el = document.querySelector('.navlink[data-view="people"]');
   if(el) el.style.display = S.session ? '' : 'none';
 }
+/* PostgREST caps a plain select at the project's "Max rows" (1000 by default)
+   and says NOTHING when it truncates — you just silently get fewer rows. So page
+   until a short page comes back. `build` must return a fresh query builder each
+   call, and must order by something unique: without a stable sort, offset paging
+   can repeat or skip rows between requests. */
+const SUPA_PAGE = 1000;
+async function selectAll(build){
+  const out = [];
+  for(let from = 0; ; from += SUPA_PAGE){
+    const res = await build().range(from, from + SUPA_PAGE - 1);
+    if(res.error) return {data:null, error:res.error};
+    out.push(...res.data);
+    if(res.data.length < SUPA_PAGE) return {data:out, error:null};
+  }
+}
 /* One pass: pull all profiles + all items (RLS already lets an authenticated
    user read both), then bucket items per user. Cached so opening any profile
-   from here is instant and needs no extra round-trip. Fine at current scale;
-   if the catalogue grows, move the per-user aggregate to an RPC/edge function. */
+   from here is instant and needs no extra round-trip. `summary` is deliberately
+   not selected — it's the longest column by far and nothing here renders it;
+   the item page re-fetches a description on demand when it's missing. */
 async function loadPeople(){
   try{
     const [pr, it] = await Promise.all([
-      supa.from('profiles').select('id,username,display_name,tagline,created_at'),
-      supa.from('items').select('id,user_id,kind,name,cover_url,creator,year,date_logged,rx,ry,summary,genre,in_progress,extra')
+      selectAll(()=>supa.from('profiles').select('id,username,display_name,tagline,created_at').order('id')),
+      selectAll(()=>supa.from('items').select('id,user_id,kind,name,cover_url,creator,year,date_logged,rx,ry,genre,in_progress,extra').order('id'))
     ]);
     if(pr.error) throw pr.error;
     if(it.error) throw it.error;
@@ -3078,9 +3094,12 @@ function itemToRow(k, o){
   };
 }
 async function loadFromSupa(){
-  const res = await supa.from('items').select('*')
+  /* paged: your own library is under the 1000-row cap today, but it would start
+     silently dropping your OLDEST items the moment it isn't. id breaks
+     created_at ties so paging stays stable. */
+  const res = await selectAll(()=>supa.from('items').select('*')
     .eq('user_id', S.session.user.id)
-    .order('created_at', {ascending:false});
+    .order('created_at', {ascending:false}).order('id'));
   if(res.error){ toast('Load failed: '+res.error.message); return; }
   Object.keys(COLLECTIONS).forEach(k=>{ S.data[k] = {items:[]}; });
   res.data.forEach(r=>{ if(S.data[r.kind]) S.data[r.kind].items.push(rowToItem(r)); });
