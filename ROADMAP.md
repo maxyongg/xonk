@@ -1,30 +1,22 @@
 # xonk — roadmap
 
-Live today: profile "You" page, People directory, quadrant rating, per-item
-status, item pages, 1-to-1 compare. Find-community (3) is the remaining **main**
-feature and still being refined — specifics will change.
+Live: profile "You" page, People directory, quadrant rating, per-item status,
+item pages (1), 1-to-1 compare (2). Find-community (3) is the remaining **main**
+feature and still being refined — specifics will change. Section numbers are
+referenced from CLAUDE.md and code comments, so don't renumber.
 
-**Vocabulary**
-- **thelist** — a user's logged library.
-- **significant similarity** — a still-to-pin-down measure of "these two users
-  rated a shared item similarly" (grid closeness and/or genre agreement).
-
----
-
-## 1. Item pages — done
-
-Read-only pop-up per work (cover, metadata, rating, status, fetched description).
+**thelist** — a user's logged library. **significant similarity** — still to pin
+down: "these two rated a shared item similarly" (grid closeness and/or genre).
 
 ---
 
-## 2. Taste score differential (1-to-1) — done
+## 2. Taste score differential (1-to-1) — shipped, one part unsettled
 
-A single **taste match** between two users, over the media both have logged.
-Shipped as a **Compare** button on another user's profile (never your own),
-opening a centered modal: headline match %, enjoyment + quality sub-scores,
-verdict sentence, overlay plot with a line per shared work, "only divergent"
-toggle, and closest-agreement / biggest-split call-outs. Below `TM_MIN` shared
-works the modal says so rather than pretending the number means anything.
+A **Compare** button on another user's profile (never your own) opens a modal:
+headline match %, enjoyment + quality sub-scores, verdict sentence, overlay plot
+with a line per shared work, "only divergent" toggle, closest-agreement /
+biggest-split call-outs. Under `TM_MIN` shared works it says so rather than
+pretending the number means anything.
 
 **Finding overlap** (`tmPair`) — three tiers, each of their items pairing once:
 exact `extra.srcId`, then `(kind, normalized name, year)`, then name alone — the
@@ -33,42 +25,66 @@ remake can't match its original. Only items **both users rated on both axes**
 take part; legacy / quality-only items have no enjoyment value to compare.
 
 **Score** (`tasteMatch`) — each shared item is two dots on the quadrant. Take the
-straight-line distance between them, mapped to 0–100 (dots touching = 100,
-opposite corners = 200√2 ≈ 283 units = 0). Average across all shared items → the
-overall match. The two sub-scores run the same map on one axis at a time, which
-is what explains *why*: enjoyment 90 / quality 40 = "love the same stuff, argue
-about whether it's good." Plain average, no conviction-weighting.
+straight-line distance between them, mapped to 0–100 (touching = 100, opposite
+corners = 200√2 ≈ 283 units = 0). Average across shared items. The two sub-scores
+run the same map on one axis at a time, which is what explains *why*: enjoyment
+90 / quality 40 = "love the same stuff, argue about whether it's good."
+
+### ⚠ Lean penalty — provisional, needs assessment
+
+Distance alone can't see a difference in *kind*. The `y=±x` diagonals halve each
+quadrant into feelings-led (`|x|>|y|`) and craft-led (`|y|>|x|`). When two ratings
+land on opposite sides — one enjoyed it more than they rate it, the other the
+reverse — `tmLeanPenalty` docks the pair by `k · min(|lean|)`, `lean = |x|−|y|`.
+The `min` makes the penalty fade to nothing near the diagonal, where the lean is
+rating noise, so there's no cliff at the boundary and a lean of exactly 0 costs
+nothing. Worked example: `(+54,+5)` vs `(+12,+32)` → 82% raw, 78% penalised.
+
+**Unsettled, in order:**
+- `TM_LEAN_K = 0.2` is a guess. Nothing validated against real data.
+- Measure the cross-lean rate across the real accounts first. If it fires on
+  nearly every pair the signal is noise; if it's rare the penalty is cosmetic.
+  `tasteMatch` returns `overallRaw` and `crossLean` for this.
+- The penalty drags *every* pairing down, so "what counts as a good score" has
+  shifted from the numbers shown before it landed.
+- Considered and **rejected**: hard-gating (dropping cross-lean items from the
+  set). It deletes precisely the disagreements, so the average rises the more
+  two people differ — and it would drop near-identical pairs like `(50,49)` vs
+  `(49,50)` that straddle the boundary.
+- Cheaper alternative if the penalty doesn't earn its place: keep the score
+  untouched and surface the same insight as a call-out — "you relate differently
+  to N works."
 
 **Later.** Conviction-weighting toggle (strong opinions counting for more); a
-delta scatter (each item at `(Δenjoyment, Δquality)`, origin = agreement) as a
-secondary view to reveal systematic bias; a match % on the People cards.
+delta scatter (each item at `(Δenjoyment, Δquality)`, origin = agreement) to
+reveal systematic bias; a match % on the People cards.
 
 ---
 
 ## 3. Find community (many-to-one) — main feature, refining
 
-Find users whose taste matches yours, and qualify groups into communities.
+Find users whose taste matches yours, then qualify groups into communities.
 Smaller library drives the %.
 
-- **Step 1 (overlap):** shared-item count ≥ **30% of the smaller user's thelist**.
-- **Step 2 (agreement):** ≥ **70% of those overlapping items** are significantly
-  similar in rating.
-- **Community:** a set of ≥ `n` people where the matching conditions hold across
-  the group.
+- **Overlap:** shared-item count ≥ **30% of the smaller user's thelist**.
+- **Agreement:** ≥ **70% of those overlapping items** are significantly similar.
+- **Community:** ≥ `n` people where the conditions hold across the group.
 
-**Open questions.** Is 30% vs the smaller library, your own, or symmetric? Precise
-"significantly similar" definition and how 70% is counted. How pairwise matches
-aggregate into a group (all pairs? centroid? cluster?). Minimum library sizes to
-avoid tiny-list noise. Privacy/consent for surfacing matches.
+**Open questions.** Is 30% vs the smaller library, your own, or symmetric?
+Precise "significantly similar" definition and how 70% is counted. How pairwise
+matches aggregate into a group (all pairs? centroid? cluster?). Minimum library
+size to avoid tiny-list noise. Privacy/consent for surfacing matches.
 
 ---
 
 ## Backend notes
 
-- Cross-user reads already work (`items` RLS `to authenticated using (true)`; People
-  loads all users' items client-side) — the raw material is available today.
-- At scale, per-user aggregation + pairwise similarity should move server-side
-  (Postgres RPC or edge function) rather than fanning out in the browser.
+Cross-user reads already work (`items` RLS `to authenticated using (true)`), so
+the raw material is there. At scale, per-user aggregation + pairwise similarity
+should move to a Postgres RPC / edge function rather than fanning out in the
+browser. Note `loadPeople` selects all items with no pagination — PostgREST caps
+a plain select at 1000 rows, so this silently truncates once the catalogue
+across all accounts passes that.
 
 ---
 

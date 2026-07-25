@@ -855,7 +855,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.25d</div>
+<div class="version" id="verStamp">xonk v2026.07.25e</div>
 
 <script>
 /* ================= config ================= */
@@ -2152,17 +2152,38 @@ function tmPair(A, B){
   });
   return pairs;
 }
+/* PROVISIONAL — see ROADMAP §2, up for assessment against real data.
+   Distance alone can't see a difference in *kind*: (+54,+5) and (+12,+32) sit
+   only 50 units apart, but one of you enjoyed the work more than you rate it
+   and the other respects it more than they enjoyed it. "Lean" is which axis
+   dominates — |x|-|y|, positive = feelings-led, negative = craft-led — and it
+   flips across the y=±x diagonals that halve each quadrant.
+   When two leans point opposite ways the score is docked, scaled by
+   min(|lean|): the penalty only bites when *both* sides are confidently off
+   the diagonal, and fades to nothing near it, where the lean is rating noise.
+   That min also handles a lean of exactly 0 (dead on the diagonal) for free —
+   the penalty is 0, so the boundary never has to be assigned to a side. */
+const TM_LEAN_K = 0.2;
+function tmLean(q){ return Math.abs(q.x) - Math.abs(q.y); }
+function tmLeanPenalty(a, b){
+  const la = tmLean(a.q), lb = tmLean(b.q);
+  if((la > 0) === (lb > 0) || la === 0 || lb === 0) return 0; // same lean, or on the diagonal
+  return TM_LEAN_K * Math.min(Math.abs(la), Math.abs(lb));
+}
 function tasteMatch(rowsMine, rowsTheirs){
   const A = tmEntries(rowsMine), B = tmEntries(rowsTheirs);
   const items = tmPair(A, B).map(({a,b})=>{
     const dx = a.q.x - b.q.x, dy = a.q.y - b.q.y;
     const d = Math.sqrt(dx*dx + dy*dy);
-    return {a, b, dx, dy, d, score: 100*(1 - d/TM_MAXD)};
-  }).sort((p,r)=>p.d - r.d); // closest agreement first
+    const raw = 100*(1 - d/TM_MAXD), pen = tmLeanPenalty(a, b);
+    return {a, b, dx, dy, d, raw, pen, score: Math.max(0, raw - pen)};
+  }).sort((p,r)=>r.score - p.score); // best agreement first — by score, since that's what the call-outs show
   const avg = f => items.length ? items.reduce((s,i)=>s+f(i),0)/items.length : null;
   return {
     n: items.length, poolMine: A.length, poolTheirs: B.length, items,
     overall: avg(i=>i.score),
+    /* kept for assessing whether the penalty earns its place — not shown in the UI */
+    overallRaw: avg(i=>i.raw), crossLean: items.filter(i=>i.pen > 0).length,
     enjoy:   avg(i=>100*(1 - Math.abs(i.dx)/200)),
     quality: avg(i=>100*(1 - Math.abs(i.dy)/200))
   };
@@ -2191,8 +2212,9 @@ function tmPanelHTML(m, them, uname){
   /* overlay plot: one line per shared work — your dot at one end, their diamond
      at the other, so a long line reads instantly as a disagreement */
   /* painted longest-line first so the sprawling divergent pairs sit underneath —
-     their hit areas would otherwise blanket the tight pairs' markers */
-  const marks = [...m.items].reverse().map(p=>{
+     their hit areas would otherwise blanket the tight pairs' markers. Sorted by
+     distance, not score: the line length is what's being layered. */
+  const marks = [...m.items].sort((p,r)=>r.d - p.d).map(p=>{
     const A = pfPos(p.a.q.x, p.a.q.y), B = pfPos(p.b.q.x, p.b.q.y);
     const div = p.d > TM_DIVERGE;
     const op = (0.18 + 0.5*Math.min(1, p.d/TM_MAXD)).toFixed(2);

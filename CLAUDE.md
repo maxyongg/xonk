@@ -50,10 +50,19 @@ deploys immediately.**
   To test a variant live, swap it into `index.html` (restore with `git checkout -- index.html`).
 - File is CRLF (Windows checkout); repo stores LF (git warns; harmless).
 
+## Unsettled
+
+- **Lean penalty (`TM_LEAN_K`, `tmLeanPenalty`) is provisional — do not treat as
+  settled.** Compare docks a pair's score when the two ratings sit on opposite
+  sides of the `y=±x` diagonals (one enjoyed it more than they rate it, the other
+  the reverse), scaled by `min(|lean|)`. `k=0.2` is a guess and nothing has been
+  validated against real data yet. `tasteMatch` returns `overallRaw` + `crossLean`
+  for exactly that assessment. See ROADMAP §2.
+
 ## Also
 
-- **Roadmap / open questions**: see `ROADMAP.md` (main upcoming work: taste-score
-  differential 1-to-1, and find-community many-to-one matching).
+- **Roadmap / open questions**: see `ROADMAP.md` (main upcoming work:
+  find-community many-to-one matching; 1-to-1 compare has shipped).
 - **Branches**: `main` (live), `pre-accounts-json` (frozen pre-Supabase JSON storage),
   `row-tint-mockup` (row washed in rating colour).
 - **Personal build**: a single-user, no-Supabase fork lives at `../media/` (own repo →
