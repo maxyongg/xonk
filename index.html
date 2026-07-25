@@ -503,7 +503,7 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
   transform:translateY(100%);transition:transform .22s ease;
 }
 .sheet.on{transform:translateY(0)}
-/* centered modal (item page) — a standalone pop-up rather than a bottom sheet */
+/* centered modal (item page, edit, compare) — a standalone pop-up rather than a bottom sheet */
 .modal{
   position:fixed;left:50%;top:50%;z-index:51;
   width:min(460px, calc(100vw - 28px));max-height:88vh;overflow-y:auto;
@@ -518,7 +518,55 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
   .modal{width:calc(100vw - 22px);max-height:90vh;border-radius:16px;padding:20px 18px calc(18px + var(--safe-b))}
 }
 .grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:6px auto 14px}
-.sheet h2{font-family:var(--font-head);font-weight:700;font-size:17px;margin:0 0 14px;letter-spacing:-.01em}
+/* direct child only: the item page's own .ip-title h2 sizes itself */
+.sheet h2,.modal>h2{font-family:var(--font-head);font-weight:700;font-size:17px;margin:0 0 14px;letter-spacing:-.01em}
+
+/* ---------- compare: 1-to-1 taste match ---------- */
+.modal.wide{width:min(660px, calc(100vw - 28px))}
+@media(max-width:520px){ .modal.wide{width:calc(100vw - 22px)} }
+.tm-hsub{font-family:var(--font-body);font-size:12px;color:var(--mute);margin:-10px 0 16px}
+.tm-big{display:flex;align-items:center;gap:18px;margin:0 0 15px}
+.tm-num{font-family:var(--font-head);font-weight:700;font-size:46px;line-height:.9;letter-spacing:-.03em;flex:0 0 auto}
+.tm-num i{font-size:19px;font-style:normal;color:var(--mute);margin-left:1px}
+.tm-bars{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}
+.tm-bar{display:flex;align-items:center;gap:9px}
+.tm-bar .l{flex:0 0 58px;font-family:var(--font-body);font-size:9px;font-weight:600;color:var(--mute);
+  text-transform:uppercase;letter-spacing:.08em}
+.tm-bar .t{flex:1;height:6px;border-radius:3px;background:var(--ink-3);min-width:0;overflow:hidden}
+.tm-bar .t i{display:block;height:100%;border-radius:3px;background:var(--acid)}
+.tm-bar .v{flex:0 0 26px;text-align:right;font-family:var(--font-body);font-size:12px;font-weight:700}
+.tm-verdict{font-family:var(--font-body);font-size:13px;line-height:1.45;margin:0 0 14px;
+  padding:11px 13px;background:var(--ink-3);border-radius:10px}
+.tm-warn{font-family:var(--font-body);font-size:11px;color:var(--warn);margin:-8px 0 14px}
+.tm-plot{position:relative;width:100%;aspect-ratio:1/1;background:var(--paper);
+  border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tm-plot svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.tm-plot .tm-ax{stroke:var(--line);stroke-width:.4}
+.tm-plot .tm-lnk{stroke:var(--mute);stroke-linecap:round}
+.tm-plot .tm-mk{stroke:rgba(0,0,0,.3);stroke-width:.35}
+/* "only divergent": hide the agreeing pairs in place, no re-render */
+.tm-plot.divonly g.pair:not(.div){display:none}
+.tm-legend{display:flex;align-items:center;gap:15px;flex-wrap:wrap;margin:11px 0 0;
+  font-family:var(--font-body);font-size:11px;color:var(--mute)}
+.tm-key{width:10px;height:10px;background:var(--mute);display:inline-block;vertical-align:-1px;margin-right:6px}
+.tm-key.you{border-radius:50%}
+.tm-key.them{border-radius:2px;transform:rotate(45deg) scale(.88)}
+.tm-callouts{display:flex;flex-direction:column;gap:8px;margin:15px 0 0}
+.tm-co{display:flex;align-items:center;gap:11px;background:var(--ink-3);border-radius:10px;padding:9px 11px}
+.tm-co .sw{display:flex;gap:4px;flex:0 0 auto}
+.tm-co .sw span{width:13px;height:13px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.22)}
+.tm-co .sw span.them{border-radius:3px;transform:rotate(45deg) scale(.9)}
+.tm-co .m{flex:1;min-width:0}
+.tm-co .lbl{font-family:var(--font-body);font-size:9px;font-weight:600;color:var(--mute);
+  text-transform:uppercase;letter-spacing:.08em}
+.tm-co .nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm-co .v{font-family:var(--font-body);font-size:11px;color:var(--mute);flex:0 0 auto;white-space:nowrap}
+@media(max-width:520px){
+  .tm-big{gap:13px}
+  .tm-num{font-size:38px}
+  .tm-bar .l{flex:0 0 46px}
+  .tm-co .v{font-size:10px}
+}
 .theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
 .theme-card{
   display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;
@@ -684,9 +732,8 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 
 <div class="scrim" id="scrim"></div>
 
-<!-- edit sheet -->
-<div class="sheet" id="editSheet" role="dialog" aria-modal="true">
-  <div class="grab"></div>
+<!-- edit pop-up — centered modal, like the item page -->
+<div class="modal" id="editSheet" role="dialog" aria-modal="true">
   <h2 id="editTitle">Add item</h2>
   <div class="typepick" id="typePick" style="display:none"></div>
   <div id="coverRow" style="display:flex;align-items:center;gap:10px;margin:0 0 12px">
@@ -714,6 +761,14 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   <div class="acts">
     <button class="btn ghost" id="itemClose">Close</button>
     <button class="btn primary" id="itemAction">Edit</button>
+  </div>
+</div>
+
+<!-- compare (1-to-1 taste match) — centered modal, opened from another user's profile -->
+<div class="modal wide" id="cmpSheet" role="dialog" aria-modal="true">
+  <div id="cmpBody"></div>
+  <div class="acts">
+    <button class="btn ghost" id="cmpClose">Close</button>
   </div>
 </div>
 
@@ -794,7 +849,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.25b</div>
+<div class="version" id="verStamp">xonk v2026.07.25c</div>
 
 <script>
 /* ================= config ================= */
@@ -1750,6 +1805,7 @@ function renderProfile(target){
       </div>
       <div class="pf-acts">
         ${ctx.fromDirectory ? `<button class="pf-btn" data-pf-back="1">← People</button>` : ''}
+        ${(!ctx.isSelf && S.session && ctx.prof) ? `<button class="pf-btn fill" data-pf-compare="${esc(ctx.prof.id)}">Compare</button>` : ''}
         ${ctx.isSelf ? `<button class="pf-btn" data-pf-edit="1">Edit profile</button>` : ''}
         ${ctx.isSelf ? `<button class="pf-btn fill" data-pf-share="1">Share</button>` : ''}
       </div>
@@ -2032,6 +2088,168 @@ function renderPeople(){
     <div class="people-grid">${cards || '<div class="empty">No one here yet.</div>'}</div>`;
 }
 
+/* ================= compare: 1-to-1 taste match ================= */
+/* Every shared work is two dots on the quadrant — yours and theirs. Take the
+   straight-line distance between them and map it so dots touching = 100 and
+   opposite corners (200√2) = 0, then average over every shared work. The two
+   sub-scores run the same map on one axis at a time, which is what explains
+   *why* two people differ. Only works BOTH of you rated on both axes take
+   part: a legacy quality-only item has no enjoyment value to compare. */
+const TM_MAXD = Math.sqrt(200*200 + 200*200); // opposite corners of the quadrant
+const TM_MIN = 5;      // fewer shared works than this and the headline is noise
+const TM_DIVERGE = 85; // distance at which a pair counts as a real disagreement
+
+function tmNorm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
+function tmEntries(rows){
+  const out = [];
+  rows.forEach(r=>{
+    const q = quadOf(r.item, r.c.scale);
+    if(!q || q.x==null) return; // unrated, or legacy quality-only
+    out.push({
+      k:r.k, item:r.item, q,
+      nm:tmNorm(r.item.name), yr:itemYear(r.k, r.item),
+      src:r.item.srcId!=null ? String(r.item.srcId) : null
+    });
+  });
+  return out;
+}
+function tmPush(m, key, e){ const a = m.get(key); if(a) a.push(e); else m.set(key,[e]); }
+function tmIndex(list){
+  const bySrc = new Map(), byNmYr = new Map(), byNm = new Map();
+  list.forEach(e=>{
+    if(e.src) tmPush(bySrc, e.k+'|'+e.src, e);
+    if(e.nm){
+      if(e.yr) tmPush(byNmYr, e.k+'|'+e.nm+'|'+e.yr, e);
+      tmPush(byNm, e.k+'|'+e.nm, e);
+    }
+  });
+  return {bySrc, byNmYr, byNm};
+}
+/* Overlap: exact external id (extra.srcId) first, then kind + name + year, then
+   name alone as a last resort — but only when a year is missing on one side and
+   the name is unambiguous, otherwise a remake would happily match the original.
+   Each of their items can only pair once. */
+function tmPair(A, B){
+  const ix = tmIndex(B), used = new Set(), pairs = [];
+  const free = c => (c||[]).filter(e=>!used.has(e));
+  A.forEach(a=>{
+    let b = null;
+    if(a.src) b = free(ix.bySrc.get(a.k+'|'+a.src))[0] || null;
+    if(!b && a.nm && a.yr) b = free(ix.byNmYr.get(a.k+'|'+a.nm+'|'+a.yr))[0] || null;
+    if(!b && a.nm){
+      const c = free(ix.byNm.get(a.k+'|'+a.nm));
+      if(c.length===1 && !(a.yr && c[0].yr)) b = c[0];
+    }
+    if(!b) return;
+    used.add(b);
+    pairs.push({a, b});
+  });
+  return pairs;
+}
+function tasteMatch(rowsMine, rowsTheirs){
+  const A = tmEntries(rowsMine), B = tmEntries(rowsTheirs);
+  const items = tmPair(A, B).map(({a,b})=>{
+    const dx = a.q.x - b.q.x, dy = a.q.y - b.q.y;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    return {a, b, dx, dy, d, score: 100*(1 - d/TM_MAXD)};
+  }).sort((p,r)=>p.d - r.d); // closest agreement first
+  const avg = f => items.length ? items.reduce((s,i)=>s+f(i),0)/items.length : null;
+  return {
+    n: items.length, poolMine: A.length, poolTheirs: B.length, items,
+    overall: avg(i=>i.score),
+    enjoy:   avg(i=>100*(1 - Math.abs(i.dx)/200)),
+    quality: avg(i=>100*(1 - Math.abs(i.dy)/200))
+  };
+}
+/* the sub-scores are the interesting part, so say out loud what they mean */
+function tmVerdict(m){
+  const e = m.enjoy, q = m.quality;
+  if(e==null) return '';
+  const HI = 75, LO = 55;
+  if(e>=HI && q>=HI) return 'Near-twins — you agree both on what’s enjoyable and on what’s well made.';
+  if(e>=HI && q<LO)  return 'You love the same things, then argue about whether they’re any good.';
+  if(q>=HI && e<LO)  return 'You agree on what’s well made — you just don’t enjoy the same things.';
+  if(e<LO && q<LO)   return 'Opposed taste: little common ground on either axis.';
+  return e>=q
+    ? 'Broadly compatible, disagreeing more about quality than about enjoyment.'
+    : 'Broadly compatible, disagreeing more about enjoyment than about quality.';
+}
+function tmRatePair(p){
+  return `${fmtSigned(p.a.q.x)}/${fmtSigned(p.a.q.y)} · ${fmtSigned(p.b.q.x)}/${fmtSigned(p.b.q.y)}`;
+}
+function tmPanelHTML(m, them, uname){
+  const R = n => Math.round(n);
+  const bar = (l,v)=>`<div class="tm-bar"><span class="l">${l}</span>
+    <span class="t"><i style="width:${Math.max(0,Math.min(100,v)).toFixed(1)}%"></i></span>
+    <span class="v">${R(v)}</span></div>`;
+  /* overlay plot: one line per shared work — your dot at one end, their diamond
+     at the other, so a long line reads instantly as a disagreement */
+  const marks = m.items.map(p=>{
+    const A = pfPos(p.a.q.x, p.a.q.y), B = pfPos(p.b.q.x, p.b.q.y);
+    const div = p.d > TM_DIVERGE;
+    const op = (0.18 + 0.5*Math.min(1, p.d/TM_MAXD)).toFixed(2);
+    const bx = B.left.toFixed(2), by = B.top.toFixed(2);
+    const tip = `${p.a.item.name||'Untitled'} — you ${fmtSigned(p.a.q.x)}/${fmtSigned(p.a.q.y)}, `
+      + `${them} ${fmtSigned(p.b.q.x)}/${fmtSigned(p.b.q.y)} · ${R(p.score)}% match`;
+    return `<g class="pair${div?' div':''}"><title>${esc(tip)}</title>
+      <line class="tm-lnk" x1="${A.left.toFixed(2)}" y1="${A.top.toFixed(2)}" x2="${bx}" y2="${by}"
+        stroke-width="${div?0.7:0.45}" stroke-opacity="${op}"/>
+      <rect class="tm-mk" x="${(B.left-1.5).toFixed(2)}" y="${(B.top-1.5).toFixed(2)}" width="3" height="3" rx=".4"
+        fill="${quadColor(p.b.q.x, p.b.q.y)}" transform="rotate(45 ${bx} ${by})"/>
+      <circle class="tm-mk" cx="${A.left.toFixed(2)}" cy="${A.top.toFixed(2)}" r="1.9"
+        fill="${quadColor(p.a.q.x, p.a.q.y)}"/>
+    </g>`;
+  }).join('');
+  const co = (lbl,p)=>`<div class="tm-co">
+    <span class="sw"><span style="background:${quadColor(p.a.q.x,p.a.q.y)}"></span>
+      <span class="them" style="background:${quadColor(p.b.q.x,p.b.q.y)}"></span></span>
+    <div class="m"><div class="lbl">${lbl}</div><div class="nm">${esc(p.a.item.name||'Untitled')}</div></div>
+    <div class="v">${R(p.score)}% · ${tmRatePair(p)}</div>
+  </div>`;
+  const best = m.items[0], worst = m.items[m.items.length-1];
+  const divN = m.items.filter(p=>p.d > TM_DIVERGE).length;
+  return `
+    <h2>You &amp; ${esc(them)}</h2>
+    <p class="tm-hsub">@${esc(uname)} · ${m.n} shared work${m.n===1?'':'s'} you’ve both rated on both axes</p>
+    <div class="tm-big">
+      <div class="tm-num">${R(m.overall)}<i>%</i></div>
+      <div class="tm-bars">${bar('Overall',m.overall)}${bar('Enjoyment',m.enjoy)}${bar('Quality',m.quality)}</div>
+    </div>
+    ${m.n < TM_MIN ? `<p class="tm-warn">Only ${m.n} shared work${m.n===1?'':'s'} — a hint, not a verdict.</p>` : ''}
+    <div class="tm-verdict">${tmVerdict(m)}</div>
+    <div class="tm-plot" id="tmPlot">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line class="tm-ax" x1="6" y1="50" x2="94" y2="50"/>
+        <line class="tm-ax" x1="50" y1="6" x2="50" y2="94"/>
+        ${marks}
+      </svg>
+      <span class="pf-axlab t">Well made</span>
+      <span class="pf-axlab b">Poorly made</span>
+      <span class="pf-axlab l">Didn't enjoy</span>
+      <span class="pf-axlab r">Enjoyed</span>
+    </div>
+    <div class="tm-legend">
+      <span><i class="tm-key you"></i>You</span>
+      <span><i class="tm-key them"></i>${esc(them)}</span>
+      <span>Longer line = bigger split</span>
+      <button class="pf-pill" data-tm-div="1" aria-pressed="false" style="margin-left:auto">Only divergent · ${divN}</button>
+    </div>
+    ${best ? `<div class="tm-callouts">${co('Closest agreement', best)}${worst && worst!==best ? co('Biggest split', worst) : ''}</div>` : ''}`;
+}
+function openCompare(target){
+  if(!S.session || !S.people) return;
+  const prof = S.people.byUid[target];
+  if(!prof || prof.id===S.session.user.id) return; // never compare with yourself
+  const them = prof.display_name || (prof.username.charAt(0).toUpperCase()+prof.username.slice(1));
+  const m = tasteMatch(allRows(), allRowsFrom(S.people.dataByUid[target]));
+  $('#cmpBody').innerHTML = m.n ? tmPanelHTML(m, them, prof.username) : `
+    <h2>You &amp; ${esc(them)}</h2>
+    <p class="tm-hsub">@${esc(prof.username)}</p>
+    <div class="empty" style="padding:30px 14px">Nothing to compare yet — no work you’ve
+      <b>both</b> rated on both axes.${m.poolTheirs ? '' : ' They haven’t rated anything on both axes.'}</div>`;
+  openSheet('#cmpSheet');
+}
+
 function render(){
   if(!S.session && !S.demo){ renderWelcome(); return; }
   /* directory + other-user profiles are a signed-in feature */
@@ -2131,6 +2349,9 @@ function setEditChrome(mode){
   $('#saveEdit').style.display = on ? 'block' : 'none';
   $('#statusWrap').style.display = on ? 'block' : 'none';
   if(on) renderStatusPick();
+  /* the pop-up is centered and scrolls internally, so a step change that grows
+     the form must start at the top rather than keep the old scroll offset */
+  $('#editSheet').scrollTop = 0;
 }
 function openEdit(item){
   if(!S.session){ S.authMode = S.authMode || 'up'; openAuth(); return; }
@@ -2305,7 +2526,10 @@ async function delEdit(){
 }
 
 /* ================= sheets ================= */
-function openSheet(sel){ $('#scrim').classList.add('on'); $(sel).classList.add('on'); }
+function openSheet(sel){
+  $('#scrim').classList.add('on');
+  const el = $(sel); el.scrollTop = 0; el.classList.add('on');
+}
 function closeSheets(){
   $('#scrim').classList.remove('on');
   document.querySelectorAll('.sheet, .modal').forEach(s=>s.classList.remove('on'));
@@ -2461,6 +2685,8 @@ $('#list').addEventListener('click', e=>{
   }
   const pu = e.target.closest('[data-user]');
   if(pu){ S.profileTarget = pu.dataset.user; S.view = 'user'; render(); window.scrollTo({top:0}); return; }
+  const cmp = e.target.closest('[data-pf-compare]');
+  if(cmp){ openCompare(cmp.dataset.pfCompare); return; }
   if(e.target.closest('[data-pf-back]')){ S.view = 'people'; S.profileTarget = null; render(); window.scrollTo({top:0}); return; }
   if(e.target.closest('[data-pf-edit]')){ openProfileEdit(); return; }
   if(e.target.closest('[data-pf-share]')){
@@ -2526,6 +2752,15 @@ $('#closeSet').addEventListener('click', closeSheets);
 $('#pfCancel').addEventListener('click', closeSheets);
 $('#pfSave').addEventListener('click', saveProfileEdit);
 $('#itemClose').addEventListener('click', closeSheets);
+$('#cmpClose').addEventListener('click', closeSheets);
+/* "only divergent" dims the plot in place — no re-render, so hover survives */
+$('#cmpSheet').addEventListener('click', e=>{
+  const t = e.target.closest('[data-tm-div]'); if(!t) return;
+  const plot = $('#tmPlot'); if(!plot) return;
+  const on = !plot.classList.contains('divonly');
+  plot.classList.toggle('divonly', on);
+  t.setAttribute('aria-pressed', on ? 'true' : 'false');
+});
 $('#itemAction').addEventListener('click', ()=>{
   const v = S.viewingItem; if(!v) return;
   if(v.own){

@@ -1,8 +1,8 @@
 # xonk — roadmap
 
 Live today: profile "You" page, People directory, quadrant rating, per-item
-status, item pages. The two taste features (2 & 3) are the app's **main** work
-and still being refined — specifics will change.
+status, item pages, 1-to-1 compare. Find-community (3) is the remaining **main**
+feature and still being refined — specifics will change.
 
 **Vocabulary**
 - **thelist** — a user's logged library.
@@ -17,37 +17,31 @@ Read-only pop-up per work (cover, metadata, rating, status, fetched description)
 
 ---
 
-## 2. Taste score differential (1-to-1) — main feature, refining
+## 2. Taste score differential (1-to-1) — done
 
 A single **taste match** between two users, over the media both have logged.
+Shipped as a **Compare** button on another user's profile (never your own),
+opening a centered modal: headline match %, enjoyment + quality sub-scores,
+verdict sentence, overlay plot with a line per shared work, "only divergent"
+toggle, and closest-agreement / biggest-split call-outs. Below `TM_MIN` shared
+works the modal says so rather than pretending the number means anything.
 
-**Finding overlap.** Match on exact `extra.srcId` (external TMDB/RAWG/Open Library
-id, now captured on new adds), falling back to `(kind, normalized name, year)` for
-older items. Only compare items where **both users have a full enjoyment + quality
-rating** — skip legacy / quality-only items entirely (no partial-axis matching).
+**Finding overlap** (`tmPair`) — three tiers, each of their items pairing once:
+exact `extra.srcId`, then `(kind, normalized name, year)`, then name alone — the
+last only when a year is missing on one side and the name is unambiguous, so a
+remake can't match its original. Only items **both users rated on both axes**
+take part; legacy / quality-only items have no enjoyment value to compare.
 
-**Score.** Each shared item is two dots on the quadrant (yours, theirs). Take the
-straight-line distance between them, mapped to 0–100 (dots touching = 100, opposite
-corners ≈ 283 units = 0). Average across all shared items → the overall match.
+**Score** (`tasteMatch`) — each shared item is two dots on the quadrant. Take the
+straight-line distance between them, mapped to 0–100 (dots touching = 100,
+opposite corners = 200√2 ≈ 283 units = 0). Average across all shared items → the
+overall match. The two sub-scores run the same map on one axis at a time, which
+is what explains *why*: enjoyment 90 / quality 40 = "love the same stuff, argue
+about whether it's good." Plain average, no conviction-weighting.
 
-**Sub-scores** (the "signature" — the interesting part):
-- **Enjoyment match** — same map, measuring only the left-right (enjoyment) gap.
-- **Quality match** — only the up-down (quality) gap.
-- These explain *why*: e.g. enjoyment 90 / quality 40 = "love the same stuff,
-  argue about whether it's good."
-
-**Presentation.** Headline match % + the two sub-scores + shared count. Gate the
-headline until enough overlap (a 95% match over 3 items is noise). Call-outs:
-biggest agreement, biggest split. Keep it a plain average for v1; conviction-
-weighting is a possible later toggle.
-
-**Visualization.** One quadrant overlaying both users' dots, a line per shared item
-(long line = divergence), "show only divergent" toggle, hover for title. Possible
-secondary view: a delta scatter (each item at `(Δenjoyment, Δquality)`, origin =
-agreement) to reveal systematic bias.
-
-**Open questions.** Final score scale/presentation; where it lives in the UI
-(entry point from the People page).
+**Later.** Conviction-weighting toggle (strong opinions counting for more); a
+delta scatter (each item at `(Δenjoyment, Δquality)`, origin = agreement) as a
+secondary view to reveal systematic bias; a match % on the People cards.
 
 ---
 
