@@ -23,6 +23,13 @@ deploys immediately.**
     avg rx/ry) so the directory never downloads anyone's library. A profile's items
     load on demand via `loadUserItems` into the `S.userData` cache. Both raw item
     loads page through `selectAll` — PostgREST silently truncates at 1000 rows.
+  - **Nothing applies `supabase-schema.sql` automatically** — it's pasted into the
+    dashboard SQL editor by hand. So a push whose JS calls new SQL breaks the live
+    site until it's run: land the SQL *first*, then push.
+- **Compare** (`tm*` functions, after `renderPeople`): `tmPair` finds shared works
+  (exact `extra.srcId` → kind+name+year → unambiguous name), `tasteMatch` scores them,
+  `tmPanelHTML` builds the modal. Only Max's own items have `srcId` backfilled, so
+  cross-account pairing still leans on name+year.
 - **Edge functions** (`supabase/functions/`, deployed via dashboard): `media-search`
   proxies TMDB/RAWG (secrets `TMDB_KEY`/`RAWG_KEY`; books use Open Library, keyless);
   `demo-data` is public and serves the demo account for the welcome screen.
@@ -44,7 +51,7 @@ deploys immediately.**
 
 ## Conventions
 
-- **Owner (Max) is signed in on the test browser → the app loads their real ~850-item
+- **Owner (Max) is signed in on the test browser → the app loads their real ~900-item
   account. Treat all writes as real data.**
 - Bump the version stamp (`id="verStamp">xonk v(YYYY.MM.DD)(letter)`) on every change.
 - After JS edits, syntax-check the inline script. `node`/`python` are often **not on PATH**;

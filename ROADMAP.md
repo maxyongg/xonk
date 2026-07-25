@@ -89,6 +89,11 @@ The directory is a Postgres aggregate (`people_directory()`), and a library is
 fetched only when you open that person — so the old (accounts × items) download
 on every People visit is gone.
 
+**Where the data actually sits (25 Jul 2026):** 921 `items` rows across all
+accounts, so the 1000-row cap was never truncating — the paging was preventative.
+Revisit the client-side aggregation when total rows pass ~10,000 or the People
+page takes over ~2s.
+
 **Next, when needed.** Compare still needs both libraries client-side. The step
 after this is an RPC that does the *pairing* in SQL and returns only the shared
 rows, leaving the scoring in JS — same payload win, no formula duplicated while
