@@ -526,15 +526,23 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 @media(max-width:520px){ .modal.wide{width:calc(100vw - 22px)} }
 .tm-hsub{font-family:var(--font-body);font-size:12px;color:var(--mute);margin:-10px 0 16px}
 .tm-big{display:flex;align-items:center;gap:18px;margin:0 0 15px}
-.tm-num{font-family:var(--font-head);font-weight:700;font-size:46px;line-height:.9;letter-spacing:-.03em;flex:0 0 auto}
+/* one headline figure; the enjoyment/quality split is a hover away rather than
+   three more numbers competing with the only one that has to land */
+.tm-num{position:relative;font-family:var(--font-head);font-weight:700;font-size:46px;line-height:.9;
+  letter-spacing:-.03em;flex:0 0 auto;cursor:help}
 .tm-num i{font-size:19px;font-style:normal;color:var(--mute);margin-left:1px}
-.tm-bars{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}
-.tm-bar{display:flex;align-items:center;gap:9px}
-.tm-bar .l{flex:0 0 58px;font-family:var(--font-body);font-size:9px;font-weight:600;color:var(--mute);
+.tm-num em{font-style:normal;font-size:13px;color:var(--mute);margin-left:7px;vertical-align:middle}
+/* line-height/letter-spacing reset: this sits inside the 46px headline number */
+.tm-brk{position:absolute;left:0;top:calc(100% + 10px);z-index:20;display:none;cursor:default;
+  line-height:1.2;letter-spacing:normal;
+  background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:9px 12px;
+  box-shadow:0 12px 28px rgba(0,0,0,.6);white-space:nowrap}
+.tm-brk.on{display:block}
+.tm-brk div{display:flex;align-items:baseline;gap:14px}
+.tm-brk div+div{margin-top:6px}
+.tm-brk .l{flex:1;font-family:var(--font-body);font-size:9px;font-weight:600;color:var(--mute);
   text-transform:uppercase;letter-spacing:.08em}
-.tm-bar .t{flex:1;height:6px;border-radius:3px;background:var(--ink-3);min-width:0;overflow:hidden}
-.tm-bar .t i{display:block;height:100%;border-radius:3px;background:var(--acid)}
-.tm-bar .v{flex:0 0 26px;text-align:right;font-family:var(--font-body);font-size:12px;font-weight:700}
+.tm-brk .v{font-family:var(--font-body);font-size:12px;font-weight:700;letter-spacing:0}
 .tm-verdict{font-family:var(--font-body);font-size:13px;line-height:1.45;margin:0 0 14px;
   padding:11px 13px;background:var(--ink-3);border-radius:10px}
 .tm-warn{font-family:var(--font-body);font-size:11px;color:var(--warn);margin:-8px 0 14px}
@@ -566,12 +574,12 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .tm-co .lbl{font-family:var(--font-body);font-size:9px;font-weight:600;color:var(--mute);
   text-transform:uppercase;letter-spacing:.08em}
 .tm-co .nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tm-co .v{font-family:var(--font-body);font-size:11px;color:var(--mute);flex:0 0 auto;white-space:nowrap}
+/* the pair's own ratings used to sit here too — four signed numbers to parse for
+   a row whose job is just "this is the one you agreed on" */
+.tm-co .v{font-family:var(--font-body);font-size:12px;font-weight:700;flex:0 0 auto;white-space:nowrap}
 @media(max-width:520px){
   .tm-big{gap:13px}
   .tm-num{font-size:38px}
-  .tm-bar .l{flex:0 0 46px}
-  .tm-co .v{font-size:10px}
 }
 .theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
 .theme-card{
@@ -855,7 +863,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.25g</div>
+<div class="version" id="verStamp">xonk v2026.07.25h</div>
 
 <script>
 /* ================= config ================= */
@@ -2229,14 +2237,9 @@ function tmVerdict(m){
     ? 'Broadly compatible, disagreeing more about quality than about enjoyment.'
     : 'Broadly compatible, disagreeing more about enjoyment than about quality.';
 }
-function tmRatePair(p){
-  return `${fmtSigned(p.a.q.x)}/${fmtSigned(p.a.q.y)} · ${fmtSigned(p.b.q.x)}/${fmtSigned(p.b.q.y)}`;
-}
 function tmPanelHTML(m, them, uname){
   const R = n => Math.round(n);
-  const bar = (l,v)=>`<div class="tm-bar"><span class="l">${l}</span>
-    <span class="t"><i style="width:${Math.max(0,Math.min(100,v)).toFixed(1)}%"></i></span>
-    <span class="v">${R(v)}</span></div>`;
+  const brk = (l,v)=>`<div><span class="l">${l}</span><span class="v">${R(v)}%</span></div>`;
   /* overlay plot: one line per shared work — your dot at one end, their diamond
      at the other, so a long line reads instantly as a disagreement */
   /* painted longest-line first so the sprawling divergent pairs sit underneath —
@@ -2270,7 +2273,7 @@ function tmPanelHTML(m, them, uname){
     <span class="sw"><span style="background:${quadColor(p.a.q.x,p.a.q.y)}"></span>
       <span class="them" style="background:${quadColor(p.b.q.x,p.b.q.y)}"></span></span>
     <div class="m"><div class="lbl">${lbl}</div><div class="nm">${esc(p.a.item.name||'Untitled')}</div></div>
-    <div class="v">${R(p.score)}% · ${tmRatePair(p)}</div>
+    <div class="v">${R(p.score)}%</div>
   </div>`;
   const best = m.items[0], worst = m.items[m.items.length-1];
   const divN = m.items.filter(p=>p.d > TM_DIVERGE).length;
@@ -2278,8 +2281,10 @@ function tmPanelHTML(m, them, uname){
     <h2>You &amp; ${esc(them)}</h2>
     <p class="tm-hsub">@${esc(uname)} · ${m.n} shared work${m.n===1?'':'s'} you’ve both rated on both axes</p>
     <div class="tm-big">
-      <div class="tm-num">${R(m.overall)}<i>%</i></div>
-      <div class="tm-bars">${bar('Overall',m.overall)}${bar('Enjoyment',m.enjoy)}${bar('Quality',m.quality)}</div>
+      <div class="tm-num" id="tmScore" tabindex="0" role="button" aria-expanded="false"
+        aria-label="Match ${R(m.overall)} percent — show breakdown">${R(m.overall)}<i>%</i><em>▾</em>
+        <span class="tm-brk" id="tmBrk">${brk('Overall',m.overall)}${brk('Enjoyment',m.enjoy)}${brk('Quality',m.quality)}</span>
+      </div>
     </div>
     ${m.n < TM_MIN ? `<p class="tm-warn">Only ${m.n} shared work${m.n===1?'':'s'} — a hint, not a verdict.</p>` : ''}
     <div class="tm-verdict">${tmVerdict(m)}</div>
@@ -2326,6 +2331,13 @@ function tmTipShow(g){
   tip.style.left = Math.max(pad + w/2, Math.min(inner - pad - w/2, cx)) + 'px';
 }
 function tmTipHide(){ const t=$('#tmTip'); if(t) t.classList.remove('on'); }
+/* headline breakdown: hover on a pointer, tap/keyboard elsewhere */
+function tmBrkSet(on){
+  const s = $('#tmScore'), b = $('#tmBrk');
+  if(!s || !b) return;
+  b.classList.toggle('on', on);
+  s.setAttribute('aria-expanded', on ? 'true' : 'false');
+}
 function openCompare(target){
   if(!S.session || !S.people) return;
   const prof = S.people.byUid[target];
@@ -2858,6 +2870,9 @@ $('#cmpSheet').addEventListener('click', e=>{
   /* on touch a tap counts as the hover; tapping away dismisses the tooltip */
   const g = e.target.closest('g.pair');
   if(g) tmTipShow(g); else tmTipHide();
+  /* tapping the number toggles; tapping anywhere else closes it */
+  const brk = $('#tmBrk');
+  if(brk) tmBrkSet(!!e.target.closest('#tmScore') && !brk.classList.contains('on'));
   const t = e.target.closest('[data-tm-div]'); if(!t) return;
   const plot = $('#tmPlot'); if(!plot) return;
   const on = !plot.classList.contains('divonly');
@@ -2867,9 +2882,23 @@ $('#cmpSheet').addEventListener('click', e=>{
 });
 $('#cmpSheet').addEventListener('mouseover', e=>{
   const g = e.target.closest('g.pair'); if(g) tmTipShow(g);
+  if(e.target.closest('#tmScore')) tmBrkSet(true);
 });
 $('#cmpSheet').addEventListener('mouseout', e=>{
   if(e.target.closest('g.pair')) tmTipHide();
+  /* the pop-up is a child of #tmScore, so moving onto it isn't leaving */
+  if(e.target.closest('#tmScore')){
+    const rt = e.relatedTarget;
+    if(!rt || !rt.closest || !rt.closest('#tmScore')) tmBrkSet(false);
+  }
+});
+/* keyboard: the number is focusable, so it has to open without a pointer */
+$('#cmpSheet').addEventListener('keydown', e=>{
+  if(!e.target.closest('#tmScore')) return;
+  if(e.key===' ' || e.key==='Enter'){
+    e.preventDefault();
+    const b = $('#tmBrk'); if(b) tmBrkSet(!b.classList.contains('on'));
+  } else if(e.key==='Escape') tmBrkSet(false);
 });
 $('#itemAction').addEventListener('click', ()=>{
   const v = S.viewingItem; if(!v) return;

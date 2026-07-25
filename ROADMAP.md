@@ -13,9 +13,9 @@ down: "these two rated a shared item similarly" (grid closeness and/or genre).
 ## 2. Taste score differential (1-to-1) — shipped, one part unsettled
 
 A **Compare** button on another user's profile (never your own) opens a modal:
-headline match %, enjoyment + quality sub-scores, verdict sentence, overlay plot
-with a line per shared work, "only divergent" toggle, closest-agreement /
-biggest-split call-outs. Under `TM_MIN` shared works it says so rather than
+headline match % (enjoyment + quality sub-scores on hover/tap), verdict sentence,
+overlay plot with a line per shared work, "only divergent" toggle,
+closest-agreement / biggest-split call-outs. Under `TM_MIN` shared works it says so rather than
 pretending the number means anything.
 
 **Finding overlap** (`tmPair`) — three tiers, each of their items pairing once:
