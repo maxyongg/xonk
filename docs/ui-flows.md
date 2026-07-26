@@ -32,27 +32,26 @@ that a visitor sees xonk rates on **two axes** before they have an account.
   the live theme, not hex, so `midnight` works too. Never put a CSS transition on
   `color` alone: background and ink must land on the same frame or the label crosses
   unreadable mid-greys during a drag.
-- **Label plates get placed at runtime.** White text on the bright yellow-green half
-  measures ~1.6:1, so each title gets an opaque plate — which then has to clear the other
+- **Label plates are placed at runtime.** White text on the bright yellow-green half
+  measures ~1.6:1, so each title gets an opaque plate, which must then clear the other
   plates, the four edge captions, *and its own dot* (the dot is the rating). `hDeconflict`
-  tries candidate slots around each dot and takes the first that collides with nothing
-  placed yet, so the coordinates aren't load-bearing. It measures in the stage's own CSS
-  px because the stage is scaled down at that moment, and re-runs on `document.fonts.ready`.
-  If you change the anchors, label size or stage size, re-check: zero label↔label and
+  takes the first candidate slot around the dot that collides with nothing placed yet — so
+  the coordinates aren't load-bearing — measuring in the stage's own CSS px (it is scaled
+  down at that moment) and re-running on `document.fonts.ready`. Sizes come off the stage,
+  not the viewport: it is 300px at every width, so plates are always the compact 11px
+  form, `short` where given. At 12px the long titles have no clash-free slot left.
+  Changing the anchors, label size or stage size means re-checking: zero label↔label and
   label↔caption overlaps, dot occlusion under ~10%.
-- **Labels are sized off the stage, not the viewport** (300px at every width → always the
-  compact 11px form, `short` where given). At 12px the long titles have no clash-free
-  slot and `hDeconflict` is forced to overlap them.
 - **One loop only.** `render()` calls `stopWelcomeHero()` before it draws anything, so
   signing in, entering the demo, or a second signed-out `render()` can't stack loops. The
   loop is driven by *both* rAF and a 33ms interval, de-duplicated on the wall clock —
   rAF alone stalls while the document is hidden and strands the hero mid-reveal showing a
   half-grown square.
 - `prefers-reduced-motion` skips the reveal (the clock starts past it) and parks the idle
-  marker instead of drifting it, but keeps presses rippling.
-- Anchors are hardcoded (`HERO_ANCHORS`). To make them live, pull five rated items spread
-  across quadrants and kinds from the demo-data edge function the way `enterDemo()` does,
-  falling back to the constant.
+  marker instead of drifting it, but keeps presses rippling. Anchors are hardcoded
+  (`HERO_ANCHORS`); to make them live, pull five rated items spread across quadrants and
+  kinds from the demo-data edge function the way `enterDemo()` does, with the constant as
+  the fallback.
 
 ## Adding
 

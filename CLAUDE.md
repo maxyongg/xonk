@@ -31,10 +31,10 @@ relevant one tends to re-break something that was already fixed.
 
 | You are about to touch | Read first |
 | --- | --- |
-| item fields, ratings, `extra`, re-logs, `rowToItem`/`itemToRow`, anything about whether two entries are the same work | `docs/data-model.md` |
-| the add/search flow, duplicate warning, re-log or log deletion, Currently cards, the compare modal's wiring, the pre-auth welcome hero, whether a dialog is a bottom sheet or a centred modal | `docs/ui-flows.md` |
+| item fields, ratings, `extra`, re-logs, `rowToItem`/`itemToRow`, whether two entries are the same work | `docs/data-model.md` |
+| adding/search, duplicates, re-logs, Currently cards, compare's wiring, the pre-auth landing, sheet vs. centred modal | `docs/ui-flows.md` |
 | Supabase, SQL, auth, RLS, People/profile loading, edge functions, the JSON files | `docs/backend.md` |
-| scoring formulas, why a feature is shaped the way it is, what's next, anything numbered §1–§3 | `ROADMAP.md` |
+| scoring formulas, why a feature is shaped the way it is, what's next, §1–§3 | `ROADMAP.md` |
 
 Two habits that keep this working:
 

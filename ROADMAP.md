@@ -2,8 +2,9 @@
 
 Live: profile "You" page, People directory, quadrant rating, per-item status,
 item pages (1), 1-to-1 compare (2), one-search-all-sources adding, one row per
-work (re-log instead of duplicating). Find-community (3) is the remaining
-**main** feature, still being refined. Section numbers are referenced from
+work (re-log instead of duplicating), an animated pre-auth landing that teaches
+the two-axis gesture. Find-community (3) is the remaining **main** feature,
+still being refined. Section numbers are referenced from
 CLAUDE.md and code comments — don't renumber.
 
 **thelist** — a user's logged library. **significant similarity** — still to pin
@@ -125,3 +126,8 @@ longer debounce or a server-side fan-out if it ever bites.
   `in_progress`. Wiring it up would double-count against the add flow, so it needs
   a decision first.
 - **Letterboxd / Goodreads import** — CSV first (full history), RSS auto-sync later.
+- **A second act for the landing hero** — a designed-but-unbuilt alternative has a ghost
+  cursor deal titles off the backlog onto the graph, one drag each, with real pointer
+  input taking over mid-loop. Deliberately not shipped: it teaches the same gesture the
+  live graph already does. Only worth revisiting if the landing needs to show *logging*
+  rather than rating.
