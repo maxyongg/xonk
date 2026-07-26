@@ -25,6 +25,7 @@
   --font-body:'Inter';
   --r:10px;
   --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
@@ -684,11 +685,53 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   flex:0 0 auto;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--sig);
   border:1px solid var(--sig);border-radius:999px;padding:6px 12px;background:none;
 }
+/* ---------- rate queue: the backlog, one item at a time ----------
+   A full-screen surface rather than a sheet on top of the list: the point is to
+   remove every transition between ratings, so nothing behind it re-renders. */
+.rq{position:fixed;inset:0;z-index:60;background:var(--paper);display:none;
+  flex-direction:column;overflow-y:auto;padding:calc(10px + var(--safe-t)) 16px calc(16px + var(--safe-b))}
+.rq.on{display:flex}
+.rq-top{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+.rq-count{font-family:var(--font-body);font-size:12px;color:var(--mute);white-space:nowrap}
+.rq-count b{color:var(--ink);font-weight:700}
+.rq-bar{flex:1;height:4px;border-radius:2px;background:var(--ink-3);overflow:hidden}
+.rq-bar i{display:block;height:100%;background:var(--acid);width:0;transition:width .18s ease}
+.rq-x{flex:0 0 auto;width:32px;height:32px;border-radius:8px;border:1px solid var(--line);
+  background:var(--ink-2);color:var(--mute);font-size:16px;line-height:1}
+.rq-body{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:360px;
+  width:100%;margin:0 auto;padding:14px 0}
+/* the graph gives up size before the controls go below the fold — a rating you
+   have to scroll to reach costs the gesture this screen exists to save */
+.rq .quad{max-width:min(320px, 44vh)}
+.rq-card{display:flex;gap:12px;align-items:center;margin-bottom:14px;min-height:76px}
+.rq-cover{flex:0 0 auto;width:56px;height:76px;border-radius:7px;background-size:cover;
+  background-position:center;border:1px solid var(--line)}
+.rq-meta{min-width:0}
+.rq-type{font-family:var(--font-body);font-size:9px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--mute)}
+.rq-title{font-family:var(--font-head);font-weight:700;font-size:18px;line-height:1.2;
+  letter-spacing:-.01em;margin:3px 0 2px;overflow-wrap:anywhere}
+.rq-sub{font-family:var(--font-body);font-size:12px;color:var(--mute)}
+/* the y already on the item: a dashed rule you can tap along to keep it */
+.rq-keep{position:absolute;left:0;right:0;height:0;border-top:1px dashed rgba(255,255,255,.75);
+  pointer-events:none;z-index:2}
+.rq-keep b{position:absolute;right:3px;top:-14px;font-family:var(--font-body);font-size:9px;
+  font-weight:700;letter-spacing:.06em;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+/* keep-quality toggle: with 600 items already carrying a y you trust, locking it
+   turns each rating into a one-axis decision */
+.rq-lock{display:flex;align-items:center;justify-content:center;gap:7px;margin:10px auto 0;
+  max-width:320px;font-family:var(--font-body);font-size:11px;color:var(--mute)}
+.rq-lock button{font-family:var(--font-body);font-size:11px;font-weight:600;padding:5px 11px;
+  border-radius:999px;border:1px solid var(--line);background:var(--ink-2);color:var(--mute)}
+.rq-lock button[aria-pressed="true"]{background:var(--acid);color:var(--on-accent);border-color:var(--acid)}
+.rq-done{text-align:center;padding:40px 0;font-family:var(--font-body);color:var(--mute);font-size:13px;line-height:1.7}
+.rq-done b{display:block;font-family:var(--font-head);font-size:20px;color:var(--ink);margin-bottom:6px}
 .acts{display:flex;gap:10px;margin-top:18px}
 .btn{flex:1;padding:14px;border-radius:var(--r);font-weight:600;font-size:15px}
 .btn.primary{background:var(--ink);color:var(--paper)}
 .btn.ghost{background:var(--ink-3);color:var(--ink);border:1px solid var(--line)}
 .btn.danger{background:none;color:var(--sig);border:1px solid var(--sig);flex:0 0 auto;padding:14px 16px}
+.btn:disabled{opacity:.4}
 .statuslbl{font-family:var(--font-body);font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px}
 .statuspick{display:flex;gap:6px}
 .statuspick button{flex:1;padding:11px 6px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--mute);font-family:var(--font-body);font-size:12px;font-weight:600;line-height:1.15}
@@ -855,15 +898,28 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   <h2>Dev menu</h2>
   <p class="note">Hidden tools — you found the version stamp.</p>
   <div class="acts" style="margin-top:2px">
-    <button class="btn ghost" id="devUnratedBtn" aria-pressed="false">Show only unrated items</button>
+    <button class="btn ghost" id="devUnratedBtn" aria-pressed="false">Show only items needing a rating</button>
+  </div>
+  <div class="acts">
+    <button class="btn primary" id="devRateQueue">Rate backlog</button>
   </div>
   <div class="acts">
     <button class="btn ghost" id="devClose">Close</button>
   </div>
 </div>
 
+<!-- rate queue: full-screen, one item per gesture, nothing behind it re-renders -->
+<div class="rq" id="rqWrap" role="dialog" aria-modal="true" aria-label="Rate backlog">
+  <div class="rq-top">
+    <span class="rq-count" id="rqCount"></span>
+    <span class="rq-bar"><i id="rqBarFill"></i></span>
+    <button class="rq-x" id="rqClose" aria-label="Close">✕</button>
+  </div>
+  <div class="rq-body" id="rqBody"></div>
+</div>
+
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.25h</div>
+<div class="version" id="verStamp">xonk v2026.07.26a</div>
 
 <script>
 /* ================= config ================= */
@@ -977,7 +1033,7 @@ const S = {
   cfg:{theme:'museum'},
   editing:null, statsCat:'overview', statsFilter:null,
   pfFilter:'all', profile:null, demoProfile:null,
-  people:null, profileTarget:null, unratedOnly:false, lastRated:null,
+  people:null, profileTarget:null, unratedOnly:false, lastRated:null, rq:null,
   userData:{},   // uid -> that person's library, filled only when you open them
   userLoading:{} // uid -> in-flight fetch, so concurrent renders share one request
 };
@@ -1242,7 +1298,7 @@ function tableRows(){
   const q = S.q.trim().toLowerCase();
   let rows = allRows();
   if(S.typeFilter!=='all') rows = rows.filter(r=>r.k===S.typeFilter);
-  if(S.unratedOnly) rows = rows.filter(r=>quadOf(r.item, r.c.scale)==null);
+  if(S.unratedOnly) rows = rows.filter(r=>needsRating(r.item, r.c.scale));
   if(q) rows = rows.filter(r=>Object.values(r.item).some(v=>v!=null && String(v).toLowerCase().includes(q)));
   const dir = S.sortDir;
   const nameCmp = (a,b)=>String(a.item.name||'').localeCompare(String(b.item.name||''));
@@ -1302,6 +1358,13 @@ function quadOf(item, sc){
   if(item.ry!=null) return {x:(item.rx!=null ? item.rx : null), y:item.ry, legacy:item.rx==null};
   if(item.rating!=null) return {x:null, y:Math.round((item.rating/sc)*200-100), legacy:true};
   return null;
+}
+/* "still needs rating" is wider than "has no rating": a legacy item carries a
+   quality score with x never set, so it reads as rated everywhere else in the
+   app but is exactly what the backlog queue exists to finish. */
+function needsRating(item, sc){
+  const q = quadOf(item, sc);
+  return !q || q.x==null;
 }
 function fmtSigned(n){ n = Math.round(n); return (n>0?'+':'')+n; }
 function quadLabel(q){
@@ -1469,7 +1532,7 @@ function renderTable(){
     </tr>`;
   }).join('') : `<tr><td colspan="7"><div class="empty"><b>Nothing here</b>Try a different filter or search.</div></td></tr>`;
   const unratedChip = S.unratedOnly
-    ? `<button class="pill" data-clear-unrated="1" aria-pressed="true" style="background:var(--sig);color:#fff;border-color:var(--sig)">Unrated only ✕</button>`
+    ? `<button class="pill" data-clear-unrated="1" aria-pressed="true" style="background:var(--sig);color:#fff;border-color:var(--sig)">Needs rating ✕</button>`
     : '';
   return `<div class="tablewrap">
     <div class="table-top">
@@ -2914,15 +2977,19 @@ $('#itemAction').addEventListener('click', ()=>{
 $('#verStamp').addEventListener('click', ()=>{
   const b = $('#devUnratedBtn');
   b.setAttribute('aria-pressed', S.unratedOnly ? 'true' : 'false');
-  b.textContent = S.unratedOnly ? 'Unrated only — on' : 'Show only unrated items';
+  b.textContent = S.unratedOnly ? 'Needs-rating filter — on' : 'Show only items needing a rating';
+  const n = rqBuild().length;
+  $('#devRateQueue').textContent = n ? `Rate backlog (${n})` : 'Rate backlog — all done';
+  $('#devRateQueue').disabled = !n;
   openSheet('#devSheet');
 });
 $('#devUnratedBtn').addEventListener('click', ()=>{
   S.unratedOnly = !S.unratedOnly;
   S.view = 'home';
   closeSheets(); render(); window.scrollTo({top:0});
-  toast(S.unratedOnly ? 'Filtering to unrated' : 'Showing all');
+  toast(S.unratedOnly ? 'Filtering to items needing a rating' : 'Showing all');
 });
+$('#devRateQueue').addEventListener('click', openRateQueue);
 $('#devClose').addEventListener('click', closeSheets);
 $('#openThemeBtn').addEventListener('click', ()=>{
   closeSheets(); renderThemeGrid(); openSheet('#themeSheet');
@@ -2946,8 +3013,11 @@ function hsl2rgb(h, s, l){
   return [f(h+1/3), f(h), f(h-1/3)].map(v=>Math.round(v*255));
 }
 /* paint every pixel with that point's exact colour, once per open */
-function paintQuadCanvas(){
-  const cv = $('#quadCanvas'); if(!cv) return;
+/* dots: optional {x,y} list painted faintly over the field — the works you've
+   already rated in this category, so a new one is placed against a visible
+   spread rather than against an absolute number you have to invent. */
+function paintQuadCanvas(cv, dots){
+  cv = cv || $('#quadCanvas'); if(!cv) return;
   const N = 240; cv.width = N; cv.height = N;
   const ctx = cv.getContext('2d');
   const img = ctx.createImageData(N, N);
@@ -2961,6 +3031,18 @@ function paintQuadCanvas(){
     }
   }
   ctx.putImageData(img, 0, 0);
+  if(dots && dots.length){
+    ctx.save();
+    ctx.globalAlpha = .62;
+    ctx.fillStyle = 'rgba(255,255,255,.95)';
+    ctx.strokeStyle = 'rgba(0,0,0,.45)';
+    ctx.lineWidth = .7;
+    dots.forEach(d=>{
+      const px = ((d.x+100)/200)*(N-1), py = ((100-d.y)/200)*(N-1);
+      ctx.beginPath(); ctx.arc(px, py, 2.2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    });
+    ctx.restore();
+  }
 }
 /* the work you rated most recently, used as a benchmark in the picker. Prefers
    the rating remembered this session, else the newest-added rated item. */
@@ -3064,6 +3146,247 @@ $('#ratepick').addEventListener('click', e=>{
     updateQuadUI();
   }
 });
+/* ================= rate queue ================= */
+/* The backlog, one item per gesture. Rating through the editor costs a row tap,
+   an item page, an Edit, a form render, a blocking save and a full re-render of
+   the library — five interactions to deliver one pointerdown. This surface
+   strips all of it: the queue is snapshotted on open, a gesture rates the item
+   on screen, the write leaves without the UI waiting on it, and the next item
+   is already there. Nothing behind the overlay re-renders until you exit. */
+const RQ_ADVANCE_MS = 380;
+
+function rqBuild(){
+  const out = [];
+  Object.keys(COLLECTIONS).forEach(k=>{
+    const sc = COLLECTIONS[k].scale, cf = creatorField(k);
+    ((S.data[k]&&S.data[k].items)||[])
+      .filter(it=>needsRating(it, sc))
+      /* same creator, then same era, adjacent: ten films by one director in a
+         row is a far cheaper run of decisions than ten unrelated ones */
+      .sort((a,b)=>String(a[cf]||'￿').localeCompare(String(b[cf]||'￿'))
+                || (itemYear(k,a)||0)-(itemYear(k,b)||0)
+                || String(a.name||'').localeCompare(String(b.name||'')))
+      .forEach(it=>out.push({k, id:it.id}));
+  });
+  return out;
+}
+function rqItem(){
+  const e = S.rq && S.rq.queue[S.rq.i];
+  if(!e) return null;
+  const it = (S.data[e.k]&&S.data[e.k].items||[]).find(x=>x.id===e.id);
+  return it ? {k:e.k, item:it} : null;
+}
+/* the quality already on the item — the dashed rule you can tap along to keep it */
+function rqKeepY(cur){
+  const q = cur && quadOf(cur.item, COLLECTIONS[cur.k].scale);
+  return (q && q.y!=null) ? q.y : null;
+}
+function rqLocked(cur){ return !!(S.rq.lockY && rqKeepY(cur)!=null); }
+function rqDots(k){
+  const sc = COLLECTIONS[k].scale;
+  return ((S.data[k]&&S.data[k].items)||[])
+    .map(it=>quadOf(it, sc)).filter(q=>q && q.x!=null).map(q=>({x:q.x, y:q.y}));
+}
+
+function rqRender(){
+  if(!S.rq) return;
+  /* an entry whose item went away (deleted in another tab) just falls through */
+  while(S.rq.i < S.rq.queue.length && !rqItem()) S.rq.i++;
+  const cur = rqItem(), total = S.rq.queue.length;
+  $('#rqCount').innerHTML = cur ? `<b>${S.rq.i+1}</b> / ${total}` : `<b>${S.rq.done}</b> rated`;
+  $('#rqBarFill').style.width = (total ? (S.rq.i/total)*100 : 100).toFixed(1)+'%';
+  if(!cur){
+    $('#rqBody').innerHTML = `<div class="rq-done"><b>Backlog clear</b>
+      ${S.rq.done} rated this session${S.rq.skipped?` · ${S.rq.skipped} skipped`:''}.
+      <div class="acts"><button class="btn primary" id="rqDone">Back to the list</button></div></div>`;
+    return;
+  }
+  const {k, item} = cur;
+  const keepY = rqKeepY(cur), locked = rqLocked(cur);
+  const sub = [item[creatorField(k)], itemYear(k, item)].filter(Boolean).join(' · ');
+  $('#rqBody').innerHTML = `
+    <div class="rq-card">
+      <div class="rq-cover" style="${bgStyle(item)}"></div>
+      <div class="rq-meta">
+        <div class="rq-type">${TYPE_LABELS[k]}</div>
+        <div class="rq-title">${esc(item.name||'Untitled')}</div>
+        ${sub?`<div class="rq-sub">${esc(sub)}</div>`:''}
+      </div>
+    </div>
+    <div class="ratepick">
+      <div class="quad" id="rqArea">
+        <canvas class="quad-canvas" id="rqCanvas" aria-hidden="true"></canvas>
+        <div class="ax h"></div><div class="ax v"></div>
+        <span class="quad-lab top">Well made</span>
+        <span class="quad-lab bottom">Poorly made</span>
+        <span class="quad-lab left">Didn't enjoy</span>
+        <span class="quad-lab right">Enjoyed</span>
+        ${keepY!=null?`<div class="rq-keep" style="top:${((100-keepY)/200*100).toFixed(1)}%"><b>Q ${fmtSigned(keepY)}</b></div>`:''}
+        <div class="quad-dot" id="rqDot" style="display:none"></div>
+      </div>
+      <div class="quad-foot">
+        <span class="quad-chip" id="rqChip" style="display:none"></span>
+        <span class="quad-read" id="rqRead"></span>
+      </div>
+      ${keepY!=null?`<div class="rq-lock">
+        <button type="button" id="rqLockBtn" aria-pressed="${locked}">Keep quality</button>
+        <span>${locked?'tap sets enjoyment only':'tap re-rates both axes'}</span>
+      </div>`:''}
+    </div>
+    <div class="acts">
+      <button class="btn ghost" id="rqSkip">Skip</button>
+      <button class="btn ghost" id="rqUndo"${S.rq.hist.length?'':' disabled'}>Undo</button>
+    </div>`;
+  paintQuadCanvas($('#rqCanvas'), rqDots(k));
+  S.rq.rx = null; S.rq.ry = null;
+  rqUpdateUI();
+}
+function rqUpdateUI(){
+  const dot = $('#rqDot'), read = $('#rqRead'), chip = $('#rqChip');
+  if(!dot) return;
+  const rx = S.rq.rx, ry = S.rq.ry;
+  if(rx==null || ry==null){
+    dot.style.display = 'none'; chip.style.display = 'none';
+    read.textContent = rqLocked(rqItem())
+      ? 'Tap left or right to set enjoyment'
+      : 'Tap anywhere on the graph to rate';
+    return;
+  }
+  chip.style.display = 'block';
+  chip.style.background = quadColor(rx, ry);
+  chip.style.borderColor = 'rgba(0,0,0,.15)';
+  dot.style.display = 'block';
+  dot.style.left = ((rx+100)/200*100)+'%';
+  dot.style.top  = ((100-ry)/200*100)+'%';
+  read.textContent = `Enjoyment ${fmtSigned(rx)} · Quality ${fmtSigned(ry)}`;
+}
+
+/* writes leave immediately and are never awaited in the rating path — the
+   network is the one thing that must not sit between two items. Exiting waits
+   on whatever is still in flight and reports anything that failed. */
+function rqWrite(id, patch){
+  if(!S.session || !S.rq) return;
+  const p = Promise.resolve(supa.from('items').update(patch).eq('id', id))
+    .then(r=>{ if(r && r.error && S.rq) S.rq.failed.push(id); })
+    .catch(()=>{ if(S.rq) S.rq.failed.push(id); })
+    .then(()=>{ if(S.rq) S.rq.inflight.delete(p); });
+  S.rq.inflight.add(p);
+}
+function rqCommit(){
+  const cur = rqItem();
+  if(!cur || S.rq.rx==null || S.rq.ry==null) return;
+  const {k, item} = cur, rx = S.rq.rx, ry = S.rq.ry;
+  S.rq.hist.push({k, id:item.id, i:S.rq.i, prev:{rx:item.rx, ry:item.ry}});
+  item.rx = rx; item.ry = ry;
+  S.lastRated = {k, id:item.id};
+  S.people = null;              // your directory card's stats are now stale
+  S.rq.done++; S.rq.dirty = true;
+  rqWrite(item.id, {rx, ry});
+  S.rq.i++;
+  rqRender();
+}
+function rqSkip(){
+  const cur = rqItem(); if(!cur) return;
+  clearTimeout(rqCommitT);
+  S.rq.hist.push({k:cur.k, id:cur.item.id, i:S.rq.i, skip:true});
+  S.rq.skipped++; S.rq.i++;
+  rqRender();
+}
+function rqUndo(){
+  const h = S.rq.hist.pop(); if(!h) return;
+  clearTimeout(rqCommitT);
+  if(h.skip) S.rq.skipped = Math.max(0, S.rq.skipped-1);
+  else {
+    const it = (S.data[h.k]&&S.data[h.k].items||[]).find(x=>x.id===h.id);
+    if(it){ it.rx = h.prev.rx; it.ry = h.prev.ry; rqWrite(h.id, {rx:h.prev.rx, ry:h.prev.ry}); }
+    S.rq.done = Math.max(0, S.rq.done-1);
+  }
+  S.rq.i = h.i;
+  rqRender();
+}
+function openRateQueue(){
+  if(!S.session){ toast('Sign in first'); return; }
+  const queue = rqBuild();
+  if(!queue.length){ toast('Nothing left to rate'); return; }
+  S.rq = {queue, i:0, rx:null, ry:null, done:0, skipped:0, hist:[],
+          lockY:false, inflight:new Set(), failed:[], dirty:false};
+  closeSheets();
+  $('#rqWrap').classList.add('on');
+  document.body.style.overflow = 'hidden';
+  rqRender();
+}
+async function closeRateQueue(){
+  if(!S.rq) return;
+  clearTimeout(rqCommitT); rqDragging = false;
+  const rq = S.rq;
+  $('#rqWrap').classList.remove('on');
+  document.body.style.overflow = '';
+  $('#rqBody').innerHTML = '';
+  if(rq.inflight.size) await Promise.all([...rq.inflight]);
+  S.rq = null;
+  if(rq.dirty) render();
+  if(rq.done) toast(rq.failed.length
+    ? `${rq.done} rated · ${rq.failed.length} failed to save`
+    : `${rq.done} rated`);
+}
+
+let rqDragging = false, rqCommitT = null;
+function rqSet(e){
+  const a = $('#rqArea'), cur = rqItem();
+  if(!a || !cur) return;
+  const r = a.getBoundingClientRect();
+  S.rq.rx = Math.max(-100, Math.min(100, Math.round(((e.clientX-r.left)/r.width)*200-100)));
+  const y = Math.max(-100, Math.min(100, Math.round((1-(e.clientY-r.top)/r.height)*200-100)));
+  S.rq.ry = rqLocked(cur) ? rqKeepY(cur) : y;
+  rqUpdateUI();
+}
+$('#rqBody').addEventListener('pointerdown', e=>{
+  const area = e.target.closest('#rqArea'); if(!area) return;
+  e.preventDefault();
+  rqDragging = true;
+  clearTimeout(rqCommitT);
+  try{ area.setPointerCapture(e.pointerId); }catch(_){}
+  rqSet(e);
+});
+$('#rqBody').addEventListener('pointermove', e=>{ if(rqDragging) rqSet(e); });
+$('#rqBody').addEventListener('pointercancel', ()=>{ rqDragging = false; });
+$('#rqBody').addEventListener('pointerup', ()=>{
+  if(!rqDragging) return;
+  rqDragging = false;
+  /* lifting is the commit — a short beat first so the dot you placed is
+     actually visible before the next item takes its place */
+  rqCommitT = setTimeout(rqCommit, RQ_ADVANCE_MS);
+});
+$('#rqBody').addEventListener('click', e=>{
+  if(e.target.closest('#rqSkip')) rqSkip();
+  else if(e.target.closest('#rqUndo')) rqUndo();
+  else if(e.target.closest('#rqDone')) closeRateQueue();
+  else if(e.target.closest('#rqLockBtn')){ S.rq.lockY = !S.rq.lockY; rqRender(); }
+});
+$('#rqClose').addEventListener('click', closeRateQueue);
+/* desktop: the whole backlog without leaving the keyboard */
+document.addEventListener('keydown', e=>{
+  if(!S.rq) return;
+  if(e.key==='Escape'){ e.preventDefault(); closeRateQueue(); return; }
+  const cur = rqItem(); if(!cur) return;
+  if(e.key==='Enter'){ e.preventDefault(); clearTimeout(rqCommitT); rqCommit(); return; }
+  if(e.key==='s'||e.key==='S'){ e.preventDefault(); rqSkip(); return; }
+  if(e.key==='u'||e.key==='U'){ e.preventDefault(); rqUndo(); return; }
+  const step = e.shiftKey ? 1 : 5;
+  const d = {ArrowLeft:[-step,0], ArrowRight:[step,0], ArrowUp:[0,step], ArrowDown:[0,-step]}[e.key];
+  if(!d) return;
+  e.preventDefault();
+  clearTimeout(rqCommitT);
+  const keepY = rqKeepY(cur);
+  /* first arrow press seeds the dot: centred on x, on the existing quality if
+     the item has one, so nudging starts from what you already said */
+  if(S.rq.rx==null) S.rq.rx = 0;
+  if(S.rq.ry==null) S.rq.ry = keepY!=null ? keepY : 0;
+  S.rq.rx = Math.max(-100, Math.min(100, S.rq.rx + d[0]));
+  if(!rqLocked(cur)) S.rq.ry = Math.max(-100, Math.min(100, S.rq.ry + d[1]));
+  rqUpdateUI();
+});
+
 $('#fetchCoversBtn').addEventListener('click', fetchMissingCovers);
 $('#fetchCoverBtn').addEventListener('click', async ()=>{
   const draft = readEdit();
