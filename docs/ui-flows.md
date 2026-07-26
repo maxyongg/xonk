@@ -13,6 +13,12 @@ next). Keep this current — it is how the next session learns any of it.*
 logo, so the reveal lifts it out of the word and grows it into the field — the point is
 that a visitor sees xonk rates on **two axes** before they have an account.
 
+- **`header.top` is hidden while signed out.** `render()` toggles it, so demo mode and
+  sign-in both bring it back without extra wiring. Nav, search and Add all need an
+  account, and the landing carries its own wordmark and buttons. Consequence: the
+  Appearance button is unreachable pre-auth — the stored theme still applies, but a
+  first-time visitor gets `museum`. The hero's top padding (`min(9vh,80px)`) replaces
+  the space the header used to hold; the handoff's `30px` assumed a header above it.
 - **The readout has no pre-live copy** — don't restore the handoff's `Tap anywhere on
   the graph to rate`. It sits at full opacity from frame zero, naming a graph that is
   still a dot on the wordmark, and in the two-column layout it floats alone beside empty

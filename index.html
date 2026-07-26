@@ -1019,7 +1019,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.26i</div>
+<div class="version" id="verStamp">xonk v2026.07.26j</div>
 
 <script>
 /* ================= config ================= */
@@ -2624,7 +2624,11 @@ function openCompare(target){
 
 function render(){
   stopWelcomeHero();   /* whatever we render next replaces the hero's DOM */
-  if(!S.session && !S.demo){ renderWelcome(); return; }
+  /* the landing is its own page: nav, search and Add all need an account, and
+     the welcome screen carries its own wordmark and sign-in buttons */
+  const bare = !S.session && !S.demo;
+  $('header.top').style.display = bare ? 'none' : '';
+  if(bare){ renderWelcome(); return; }
   /* directory + other-user profiles are a signed-in feature */
   if((S.view==='people' || S.view==='user') && !S.session){ S.view='profile'; S.profileTarget=null; }
   setNavActive();
@@ -2673,7 +2677,7 @@ const LOGO_O_SVG = `<path d="M10 10L10 1A9 9 0 0 1 19 10Z" fill="#4fae57"/><path
 function renderWelcome(){
   setNavActive();
   $('#list').innerHTML = `
-    <div class="home-hero" style="padding:30px 0 0">
+    <div class="home-hero" style="padding:min(9vh,80px) 0 0">
       <div class="brand" style="font-size:56px">x<svg class="logo-o" id="heroBrandO" viewBox="0 0 20 20" aria-hidden="true">${LOGO_O_SVG}</svg>nk</div>
     </div>
     <div class="hero-lay">
