@@ -878,23 +878,15 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   </div>
 </div>
 
-<!-- settings sheet -->
-<div class="sheet" id="setSheet" role="dialog" aria-modal="true">
-  <div class="grab"></div>
+<!-- settings — centered modal -->
+<div class="modal" id="setSheet" role="dialog" aria-modal="true">
   <h2>Settings</h2>
   <p class="note" id="acctInfo">Not signed in.</p>
   <div class="acts" style="margin-top:2px">
     <button class="btn ghost" id="acctAuthBtn">Sign in / create account</button>
-    <button class="btn ghost" id="importJsonBtn" style="display:none">Import old JSON lists</button>
   </div>
   <div class="acts" style="margin-top:2px;display:none" id="signOutRow">
     <button class="btn danger" id="signOutBtn" style="flex:1">Sign out</button>
-  </div>
-  <div class="acts" style="margin-top:0">
-    <button class="btn ghost" id="openThemeBtn">Appearance — themes &amp; fonts</button>
-  </div>
-  <div class="acts" style="margin-top:2px">
-    <button class="btn ghost" id="fetchCoversBtn">Fetch missing covers</button>
   </div>
   <div class="acts">
     <button class="btn ghost" id="closeSet">Close</button>
@@ -916,9 +908,8 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   </div>
 </div>
 
-<!-- theme sheet -->
-<div class="sheet" id="themeSheet" role="dialog" aria-modal="true">
-  <div class="grab"></div>
+<!-- appearance — centered modal -->
+<div class="modal" id="themeSheet" role="dialog" aria-modal="true">
   <h2>Appearance</h2>
   <p class="note">Applies instantly and stays on this device only — no need to sync.</p>
   <div class="theme-grid" id="themeGrid"></div>
@@ -952,6 +943,9 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   <div class="acts">
     <button class="btn primary" id="devRateQueue">Rate backlog</button>
   </div>
+  <div class="acts" style="margin-top:2px">
+    <button class="btn ghost" id="fetchCoversBtn">Fetch missing covers</button>
+  </div>
   <div class="acts">
     <button class="btn ghost" id="devClose">Close</button>
   </div>
@@ -968,7 +962,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.26d</div>
+<div class="version" id="verStamp">xonk v2026.07.26e</div>
 
 <script>
 /* ================= config ================= */
@@ -3308,9 +3302,6 @@ $('#devUnratedBtn').addEventListener('click', ()=>{
 });
 $('#devRateQueue').addEventListener('click', openRateQueue);
 $('#devClose').addEventListener('click', closeSheets);
-$('#openThemeBtn').addEventListener('click', ()=>{
-  closeSheets(); renderThemeGrid(); openSheet('#themeSheet');
-});
 $('#closeTheme').addEventListener('click', closeSheets);
 $('#themeGrid').addEventListener('click', e=>{
   const b = e.target.closest('[data-theme]'); if(!b) return;
@@ -3813,41 +3804,6 @@ async function loadFromSupa(){
   res.data.forEach(r=>{ if(S.data[r.kind]) S.data[r.kind].items.push(rowToItem(r)); });
   render();
 }
-/* one-time migration of the old repo JSON files into this account */
-async function importLocalJson(){
-  if(!S.session) return;
-  if(!confirm('Import films/games/tv/books JSON from the repo into your account? Anything you already have is skipped.')) return;
-  const btn = $('#importJsonBtn'); btn.textContent='Importing…'; btn.disabled=true;
-  try{
-    let total = 0, skipped = 0;
-    for(const k of Object.keys(COLLECTIONS)){
-      let j; try{ j = await loadLocal(k); }catch(e){ continue; }
-      const sc = COLLECTIONS[k].scale;
-      const rows = [], batchKeys = [];
-      (j.items||[]).forEach(it=>{
-        const o = {...it};
-        if(o.ry==null && o.rating!=null){ o.ry = Math.round((o.rating/sc)*200-100); o.rx = null; }
-        delete o.id;
-        /* against the library *and* against this run, so a file with its own
-           duplicates can't sneak them in either */
-        const keys = workKeys(k, o.name, itemYear(k, o), o.srcId);
-        if(findExisting(k, {srcId:o.srcId, name:o.name, year:itemYear(k, o)}) || batchKeys.some(b=>sameWork(keys, b))){
-          skipped++; return;
-        }
-        batchKeys.push(keys);
-        rows.push(itemToRow(k, o));
-      });
-      for(let i=0;i<rows.length;i+=200){
-        const r = await supa.from('items').insert(rows.slice(i,i+200));
-        if(r.error) throw r.error;
-      }
-      total += rows.length;
-    }
-    toast('Imported '+total+' items'+(skipped?` · skipped ${skipped} already logged`:''));
-    await loadFromSupa();
-  }catch(err){ toast('Import failed: '+err.message); }
-  btn.textContent='Import old JSON lists'; btn.disabled=false;
-}
 /* ---- auth ---- */
 function usernameOf(session){
   if(!session) return '';
@@ -3859,12 +3815,10 @@ function renderAcct(){
   if(S.session){
     info.innerHTML = 'Signed in as <b>'+esc(usernameOf(S.session))+'</b>';
     $('#acctAuthBtn').style.display='none';
-    $('#importJsonBtn').style.display='block';
     $('#signOutRow').style.display='flex';
   } else {
     info.textContent = 'Not signed in — the list needs an account now.';
     $('#acctAuthBtn').style.display='block';
-    $('#importJsonBtn').style.display='none';
     $('#signOutRow').style.display='none';
   }
 }
@@ -3938,7 +3892,6 @@ $('#authGo').addEventListener('click', doAuth);
 $('#authSheet').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); doAuth(); } });
 $('#acctAuthBtn').addEventListener('click', ()=>{ closeSheets(); openAuth(); });
 $('#signOutBtn').addEventListener('click', async ()=>{ await supa.auth.signOut(); closeSheets(); toast('Signed out'); });
-$('#importJsonBtn').addEventListener('click', importLocalJson);
 
 /* ================= go ================= */
 loadCfg();

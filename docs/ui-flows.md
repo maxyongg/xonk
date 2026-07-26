@@ -1,7 +1,8 @@
 # UI flows
 
 *Read before touching the add/search flow, the duplicate warning, re-logging or log
-deletion, Currently cards, or the compare modal's wiring. Siblings: `data-model.md`
+deletion, Currently cards, the compare modal's wiring, or any dialog's sheet-vs-modal
+presentation. Siblings: `data-model.md`
 (what these flows write), `backend.md` (where it goes), `ROADMAP.md` (scoring, what's
 next). Keep this current — it is how the next session learns any of it.*
 
@@ -21,8 +22,8 @@ the source's own ordering).
 ## Duplicates and re-logging
 
 Picking something already in your library **warns rather than blocks** (`showDupe`) and
-offers to log it again instead. All four insert paths run `findExisting` first: the
-search pick, the manual save, `addFromViewed`, and the JSON import.
+offers to log it again instead. All three insert paths run `findExisting` first: the
+search pick, the manual save, and `addFromViewed`.
 
 - **Re-log** → `saveRelog` appends today's date to `logs`, sorts, points `date_logged` at
   the latest, and **updates** the existing row. It never inserts.
@@ -58,3 +59,16 @@ on `sameWork()`'s two tiers with each item pairing at most once, `tasteMatch` sc
 `tmPanelHTML` renders the modal. Only items **both users rated on both axes** count, and
 under `TM_MIN` shared works the panel says so instead of showing a number. Scoring and
 the provisional lean penalty are documented in ROADMAP §2.
+
+## Sheets vs. modals
+
+`openSheet(sel)` / `closeSheets()` drive both, so which one a dialog is comes down to the
+class in the markup: `.sheet` slides up from the bottom (add/edit, auth, profile, dev
+menu), `.modal` is centred over a scrim (item page, compare, settings, appearance). A
+`.modal` must not carry a `.grab` handle — that's the bottom sheet's drag affordance and
+reads as broken on a centred pop-up.
+
+Settings holds account state only. Appearance opens from its own header button
+(`#themeBtn`), not from Settings, and one-time maintenance tools live in the dev menu
+behind the version stamp — currently the needs-rating filter, the rate backlog, and
+"Fetch missing covers".

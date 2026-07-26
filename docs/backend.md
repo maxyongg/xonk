@@ -44,5 +44,6 @@ In `supabase/functions/`, deployed via the dashboard (not by any script here).
 ## Legacy / dead files
 
 - `films.json`, `tv.json`, `games.json`, `books.json`, `albums.json` — a frozen
-  pre-accounts snapshot. Still used as the demo fallback and as an import source.
+  pre-accounts snapshot. Still the demo fallback (`loadLocal`). The one-time
+  "Import old JSON lists" button that read them is gone — the migration is done.
 - `scripts/` and `.github/workflows/` — unused.
