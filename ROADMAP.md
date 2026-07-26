@@ -9,6 +9,9 @@ CLAUDE.md and code comments — don't renumber.
 **thelist** — a user's logged library. **significant similarity** — still to pin
 down: "these two rated a shared item similarly" (grid closeness and/or genre).
 
+This file is decisions and open questions. How the shipped code actually works lives in
+`docs/` (`data-model.md`, `backend.md`, `ui-flows.md`).
+
 ---
 
 ## Next up — stats page + timeline
