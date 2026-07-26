@@ -132,6 +132,26 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .ccard .nm{position:absolute;left:12px;right:12px;bottom:12px;color:#fff;font-family:var(--font-head);font-weight:700;font-size:15px;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
 .ccard .fin{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.92);color:#111;display:flex;align-items:center;justify-content:center;font-size:13px;opacity:0;transition:opacity .12s}
 .ccard:hover .fin{opacity:1}
+/* the stack: backs are absolute, the front card is what gives the cell its size */
+.cstack{position:relative}
+.cstack>.ccard{position:absolute;inset:0}
+.cstack>.ccard.front{position:relative}
+/* origin at the top edge, so the peek stays the offset itself (10px / 19px)
+   instead of shrinking as the card grows — scaling only tapers the shoulders */
+.cstack .back{pointer-events:none;transform-origin:50% 0;transition:transform .14s ease}
+.cstack .b1{transform:translateY(-10px) scale(.96)}
+.cstack .b2{transform:translateY(-19px) scale(.92);opacity:.8}
+.cstack:hover .b1{transform:translateY(-13px) scale(.96)}
+.cstack:hover .b2{transform:translateY(-22px) scale(.92)}
+/* the peek itself is the control — a strip across the top of the stack. The
+   front card sits over its lower half, so only the part where cards actually
+   show through is clickable, with a little slack for touch. */
+.cstack .cyczone{position:absolute;left:0;right:0;top:-24px;height:32px;background:none;cursor:pointer;border-radius:12px 12px 0 0}
+.cstack .cyczone:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+/* count is a label, not a button — the deck is what you press */
+.ccard .stackn{position:absolute;right:12px;bottom:13px;font-family:var(--font-body);font-size:9px;
+  font-weight:700;letter-spacing:.09em;color:rgba(255,255,255,.85);pointer-events:none}
+.ccard.multi .nm{right:46px}
 .ccard.add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:1.5px dashed var(--line);background:none;color:var(--mute);text-align:center;padding:12px}
 .ccard.add .plus{width:32px;height:32px;border-radius:50%;background:var(--ink-2);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--ink);flex:0 0 auto}
 .ccard.add span{font-family:var(--font-body);font-size:11px;line-height:1.3}
@@ -928,7 +948,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.26b</div>
+<div class="version" id="verStamp">xonk v2026.07.26c</div>
 
 <script>
 /* ================= config ================= */
@@ -1038,6 +1058,7 @@ function renderThemeGrid(){
 const S = {
   view:'home', tab:'films', typeFilter:'all', q:'',
   sortKey:'date', sortDir:-1,
+  curTop:{},          // which card is on top of each Currently stack
   data:{},
   cfg:{theme:'museum'},
   editing:null, statsCat:'overview', statsFilter:null,
@@ -1508,26 +1529,56 @@ function quickAddCurrent(k){
   S.editing.status = 'inProgress';
   S.editing.inProgress = true;
 }
-function renderHome(){
-  const cur = computeCurrently();
+/* Currently is one slot per category, always three across: a second book doesn't
+   get its own tile, it stacks behind the first. The counter flips through the
+   stack; the card itself still opens whatever is on top. */
+const CUR_SLOTS = [['books','Reading','a book'],['tv','Watching','a show'],['games','Playing','a game']];
+function currentByCat(){
   const byCat = {books:[], tv:[], games:[]};
-  cur.forEach(r=>{ if(byCat[r.k]) byCat[r.k].push(r); });
-  const slots = [['books','Reading','a book'],['tv','Watching','a show'],['games','Playing','a game']];
-  const curCards = slots.map(([k,verb,noun])=>{
+  computeCurrently().forEach(r=>{ if(byCat[r.k]) byCat[r.k].push(r); });
+  return byCat;
+}
+function currentCardsHTML(byCat){
+  return CUR_SLOTS.map(([k,verb,noun])=>{
     const arr = byCat[k];
-    if(arr.length){
-      return arr.map(r=>`<div class="ccard" data-open="${r.k}:${r.item.id}">
-        <div class="bg" style="${bgStyle(r.item)}"></div><div class="shade"></div>
-        <div class="lab">${verb}</div>
-        <button type="button" class="fin" data-finish="${r.k}:${r.item.id}" title="Log as finished">✓</button>
-        <div class="nm">${esc(r.item.name||'Untitled')}</div>
-      </div>`).join('');
+    if(!arr.length){
+      return `<div class="ccard add" data-quick-add="${k}" role="button" tabindex="0">
+        <span class="plus">+</span>
+        <span>Add ${noun}</span>
+      </div>`;
     }
-    return `<div class="ccard add" data-quick-add="${k}" role="button" tabindex="0">
-      <span class="plus">+</span>
-      <span>Add ${noun}</span>
+    const top = (S.curTop[k]||0) % arr.length;
+    const front = arr[top];
+    /* the next two, wrapping — deepest first so the DOM order is the paint order */
+    const backs = arr.slice(top+1).concat(arr.slice(0,top)).slice(0,2)
+      .map((r,i)=>`<div class="ccard back b${i+1}" aria-hidden="true"><div class="bg" style="${bgStyle(r.item)}"></div><div class="shade"></div></div>`)
+      .reverse().join('');
+    return `<div class="cstack">
+      ${backs}
+      ${arr.length>1?`<button type="button" class="cyczone" data-cycle="${k}" title="Next in this stack" aria-label="Next of ${arr.length} in progress"></button>`:''}
+      <div class="ccard front${arr.length>1?' multi':''}" data-open="${front.k}:${front.item.id}">
+        <div class="bg" style="${bgStyle(front.item)}"></div><div class="shade"></div>
+        <div class="lab">${verb}</div>
+        <button type="button" class="fin" data-finish="${front.k}:${front.item.id}" title="Log as finished">✓</button>
+        <div class="nm">${esc(front.item.name||'Untitled')}</div>
+        ${arr.length>1?`<span class="stackn">${top+1}/${arr.length}</span>`:''}
+      </div>
     </div>`;
   }).join('');
+}
+/* flipping a stack only touches that row — no reason to rebuild the table under it */
+function cycleCurrent(k){
+  const byCat = currentByCat();
+  const n = (byCat[k]||[]).length;
+  if(n<2) return;
+  S.curTop[k] = ((S.curTop[k]||0)+1) % n;
+  const box = document.querySelector('.current-cards');
+  if(box) box.innerHTML = currentCardsHTML(byCat);
+  else render();
+}
+function renderHome(){
+  const cur = computeCurrently();
+  const curCards = currentCardsHTML(currentByCat());
 
   const recent = recentlyLogged(14);
   const recentTiles = recent.length ? recent.map(r=>{
@@ -2920,6 +2971,8 @@ $('#list').addEventListener('click', e=>{
   }
   const fin = e.target.closest('[data-finish]');
   if(fin){ e.stopPropagation(); const [k,id]=fin.dataset.finish.split(':'); logFinished(k,id); return; }
+  const cyc = e.target.closest('[data-cycle]');
+  if(cyc){ e.stopPropagation(); cycleCurrent(cyc.dataset.cycle); return; }
   const qa = e.target.closest('[data-quick-add]');
   if(qa){ quickAddCurrent(qa.dataset.quickAdd); return; }
   const tp = e.target.closest('[data-type]');
