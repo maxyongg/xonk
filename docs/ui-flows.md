@@ -13,6 +13,11 @@ next). Keep this current — it is how the next session learns any of it.*
 logo, so the reveal lifts it out of the word and grows it into the field — the point is
 that a visitor sees xonk rates on **two axes** before they have an account.
 
+- **No readout row** — don't re-add it from the design handoff. It specified a colour
+  chip plus `Enjoyment ±n · Quality ±n` under the graph, but its pre-live copy sits at
+  full opacity from frame zero, naming a graph that is still a dot on the wordmark, and
+  in the two-column layout it floats alone beside empty space. The marker and the tinted
+  Sign in button already carry the colour feedback.
 - **Two columns above 760px, stacked below.** `.hero-lay` puts the actions beside the
   graph on a desktop so the whole landing sits above the fold; on a phone it stacks. In
   row mode the stage's margin has to be zeroed on *all four* sides — its `auto` side
