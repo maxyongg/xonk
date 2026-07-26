@@ -1,12 +1,29 @@
 # xonk — roadmap
 
 Live: profile "You" page, People directory, quadrant rating, per-item status,
-item pages (1), 1-to-1 compare (2). Find-community (3) is the remaining **main**
-feature, still being refined. Section numbers are referenced from CLAUDE.md and
-code comments — don't renumber.
+item pages (1), 1-to-1 compare (2), one-search-all-sources adding. Find-community
+(3) is the remaining **main** feature, still being refined. Section numbers are
+referenced from CLAUDE.md and code comments — don't renumber.
 
 **thelist** — a user's logged library. **significant similarity** — still to pin
 down: "these two rated a shared item similarly" (grid closeness and/or genre).
+
+---
+
+## Next up — stats page + timeline
+
+The stats page currently repeats what the profile already says (counts, E/Q
+averages, top genre, a per-category scatter). Re-aim it at what the profile
+*can't* show — time and drift — and keep identity/taste-signature on the profile.
+
+- **Timeline graphic.** Undecided: a **volume** timeline (month buckets, stacked by
+  kind) or a **taste** timeline (a dot per item on date × rating, coloured by
+  `quadColor`). The taste one is more distinctive and reuses existing colour code,
+  but needs dense `date_logged` — check coverage across the ~900 rows first.
+- **Drift.** Rolling average enjoyment/quality over time, or a per-year centroid on
+  the quadrant: "has my taste moved?" is the question a large library can answer.
+- The year bars (`renderOverviewStats`) are the only time series today and have no
+  month resolution and no rating dimension — they're what the timeline replaces.
 
 ---
 
@@ -33,10 +50,10 @@ docks the pair by `k · min(|lean|)`, `lean = |x|−|y|` — the `min` fades the
 penalty to nothing near the diagonal, so there's no cliff at the boundary.
 Example: `(+54,+5)` vs `(+12,+32)` → 82% raw, 78% penalised.
 
-- `TM_LEAN_K = 0.2` is a guess, unvalidated against real data.
-- Measure the cross-lean rate first (`tasteMatch` returns `overallRaw` +
-  `crossLean`): if it fires on nearly every pair it's noise, if rarely it's cosmetic.
-- It drags *every* pairing down, so "a good score" has shifted from pre-penalty numbers.
+- `TM_LEAN_K = 0.2` is a guess, unvalidated against real data. Measure the
+  cross-lean rate first (`tasteMatch` returns `overallRaw` + `crossLean`): if it
+  fires on nearly every pair it's noise, if rarely it's cosmetic. It drags *every*
+  pairing down, so "a good score" has shifted from pre-penalty numbers.
 - **Rejected**: hard-gating (dropping cross-lean pairs) — it deletes precisely the
   disagreements, so the average *rises* the more two people differ.
 - Cheaper alternative: leave the score alone and surface it as a call-out
@@ -61,6 +78,8 @@ Smaller library drives the %.
 aggregate into a group (all pairs? centroid? cluster?). Minimum library size.
 Privacy/consent for surfacing matches.
 
+Blocked on more beta users for a dataset worth tuning against.
+
 ---
 
 ## Backend notes
@@ -68,8 +87,7 @@ Privacy/consent for surfacing matches.
 **Today (25 Jul 2026):** 921 `items` rows across all accounts — the 1000-row cap
 was never truncating, so `selectAll`'s paging is preventative. The directory is a
 Postgres aggregate (`people_directory()`, live) and a library loads only when you
-open that person, so the old (accounts × items) download per People visit is gone.
-Revisit when total rows pass ~10,000 or People takes over ~2s.
+open that person. Revisit when total rows pass ~10,000 or People takes over ~2s.
 
 **Next, when needed.** Compare still pulls both libraries client-side. The step
 after this is an RPC that does the *pairing* in SQL and returns only shared rows,
@@ -80,8 +98,17 @@ The hard part is `tmPair`: the name-only tier needs a uniqueness count, and "eac
 item pairs once" is a greedy assignment (`DISTINCT ON` / `row_number()`), not a
 plain join.
 
+Adding now fires 3 `media-search` invocations per debounced keystroke (one per
+TMDB/RAWG source; books are keyless) instead of 1 — fine at beta volume, worth a
+longer debounce or a server-side fan-out if it ever bites.
+
 ---
 
 ## Lower priority
 
+- **Search metadata, not just titles** — narrow a search by author/director/studio,
+  e.g. `flight kundera` to find the right *Flight* among a dozen. Both the add
+  search (`searchAllSuggestions`) and the header search over thelist. Per-source:
+  TMDB has no combined query, so it likely means searching the title term and
+  re-ranking on the metadata term client-side; Open Library takes `&author=`.
 - **Letterboxd / Goodreads import** — CSV first (full history), RSS auto-sync later.

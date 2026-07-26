@@ -23,6 +23,9 @@ deploys immediately.**
     truncates at 1000 rows.
   - **Nothing applies `supabase-schema.sql` automatically** — it's pasted into the
     dashboard SQL editor by hand, so land new SQL *before* pushing JS that calls it.
+- **Adding**: one search hits all four sources at once (`searchAllSuggestions`, ranked
+  by `titleCloseness`) — the kind comes from the result you pick, which is what sets
+  `S.tab`. The kind picker survives only on the manual fallback form.
 - **Compare** (`tm*` functions): `tmPair` pairs shared works, `tasteMatch` scores,
   `tmPanelHTML` renders the modal. Only Max's items have `extra.srcId` backfilled, so
   cross-account pairing mostly falls back to name+year. Details in ROADMAP §2.
@@ -50,21 +53,19 @@ deploys immediately.**
   Treat all writes as real data.**
 - Bump the version stamp (`id="verStamp">xonk v(YYYY.MM.DD)(letter)`) on every change.
 - After JS edits, syntax-check the inline script. `node`/`python` are often **not on
-  PATH**; fallback is the in-app browser — `new Function(<script text>)` to catch parse
-  errors. `git` runs via the Bash tool (Git Bash).
-- The Browser pane only runs JS for this project's `index.html` over `file://`. To test
-  a variant, swap it into `index.html` (restore with `git checkout -- index.html`).
+  PATH**; fallback is the in-app browser — `new Function(<script text>)` catches parse
+  errors. It only runs JS for this project's `index.html` over `file://`; to test a
+  variant, swap it into `index.html` (restore with `git checkout -- index.html`).
+  `git` runs via the Bash tool (Git Bash).
 - File is CRLF (Windows checkout); repo stores LF (git warns; harmless).
 
-## Unsettled
+## Open threads
 
-**Lean penalty (`TM_LEAN_K = 0.2`, `tmLeanPenalty`) is provisional** — compare docks a
-pair whose two ratings sit on opposite sides of the `y=±x` diagonals. `k` is a guess,
-unvalidated; `tasteMatch` returns `overallRaw` + `crossLean` for the assessment. ROADMAP §2.
-
-## Also
-
-- **Roadmap / open questions**: `ROADMAP.md` (next main feature: find-community).
+- **Lean penalty** (`TM_LEAN_K = 0.2`, `tmLeanPenalty`) in compare is a guess, docking
+  pairs whose ratings straddle the `y=±x` diagonals. `tasteMatch` returns `overallRaw` +
+  `crossLean` for the assessment — ROADMAP §2.
+- **Roadmap / open questions**: `ROADMAP.md` (next up: stats page + timeline; next main
+  feature: find-community).
 - **Branches**: `main` (live), `pre-accounts-json` (frozen JSON storage), `row-tint-mockup`.
 - **Personal build**: single-user, no-Supabase fork at `../media/` (own repo →
   maxyongg.github.io/media); synced manually when asked.

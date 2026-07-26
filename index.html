@@ -117,6 +117,13 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .hero-h .sub{font-family:var(--font-body);font-size:11px;color:var(--mute);letter-spacing:.02em;flex:0 0 auto}
 .hero-h .rule{flex:1;height:1px;background:var(--line)}
 .hero-h .viewall{font-family:var(--font-body);font-size:10px;color:var(--mute);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;background:none;flex:0 0 auto}
+/* "add another" lives in the header so a category that already has something
+   in progress can still take a second one — the empty slots below only cover
+   categories with nothing in them */
+.hero-h .hero-add{font-family:var(--font-body);font-size:10px;font-weight:600;color:var(--mute);letter-spacing:.08em;
+  text-transform:uppercase;white-space:nowrap;background:none;border:1px solid var(--line);border-radius:999px;
+  padding:4px 10px;flex:0 0 auto;cursor:pointer}
+.hero-h .hero-add:hover{color:var(--ink);border-color:var(--ink)}
 .current-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .ccard{position:relative;aspect-ratio:3/4;border-radius:12px;overflow:hidden;cursor:pointer;background:var(--ink-3);border:1px solid var(--line);display:block}
 .ccard .bg{position:absolute;inset:0;background-size:cover;background-position:center}
@@ -179,13 +186,11 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .mtable tbody tr:hover{background:var(--ink-2)}
 .mtable td{padding:10px 10px;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* column widths (title column has none, so it absorbs the remaining space) */
-.col-idx{width:34px}
 .col-creator{width:158px}
 .col-type{width:76px}
 .col-year{width:56px}
 .col-date{width:104px}
 .col-rating{width:64px}
-.cell-idx{font-family:var(--font-body);font-size:12px;color:var(--mute)}
 .titlecell{display:flex;align-items:center;gap:13px;min-width:0}
 .titlecell .t{display:flex;flex-direction:column;min-width:0;overflow:hidden}
 .cell-title{font-family:var(--font-head);font-weight:700;font-size:17px;letter-spacing:-.01em;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -212,7 +217,6 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
   .type-pills .pill{font-size:10px;padding:6px 12px}
   .table-meta{font-size:10px}
 }
-@media(max-width:440px){ .col-idx{display:none} }
 .empty{text-align:center;color:var(--mute);font-family:var(--font-body);font-size:13px;padding:50px 20px}
 .empty b{display:block;color:var(--ink);font-family:var(--font-body);font-weight:600;font-size:16px;margin-bottom:6px}
 
@@ -601,9 +605,14 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
   width:32px;height:46px;border-radius:5px;object-fit:cover;
   background:var(--ink-2);flex:0 0 auto;
 }
-.suggest-meta{display:flex;flex-direction:column;min-width:0}
+.suggest-meta{display:flex;flex-direction:column;min-width:0;flex:1}
 .suggest-title{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .suggest-year{font-family:var(--font-body);font-size:11px;color:var(--mute)}
+/* the kind chip is the only thing telling a film from a show now that one
+   search covers every source */
+.suggest-kind{font-family:var(--font-body);font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--mute);border:1px solid var(--line);border-radius:5px;padding:3px 7px;flex:0 0 auto;white-space:nowrap}
+.suggest-note{font-family:var(--font-body);font-size:11.5px;color:var(--mute);padding:2px 2px 4px}
 .add-preview{display:flex;gap:14px;align-items:flex-start;margin:2px 0 12px}
 .add-preview-cover{width:74px;height:106px;border-radius:8px;object-fit:cover;background:var(--ink-3);flex:0 0 auto}
 .add-preview-meta{min-width:0}
@@ -919,7 +928,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.26a</div>
+<div class="version" id="verStamp">xonk v2026.07.26b</div>
 
 <script>
 /* ================= config ================= */
@@ -1159,6 +1168,36 @@ async function searchSuggestions(k, q){
   }catch(e){ return []; }
   return [];
 }
+/* ---- one search across every source ----
+   Adding no longer starts with "which kind is it?": all four sources are asked
+   at once and the hits are interleaved by how close each title sits to what was
+   typed. The kind comes from whichever result you pick. */
+const SEARCH_KINDS = ['films','tv','games','books'];
+function normTitle(s){
+  return String(s||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+}
+/* 0–100 on title closeness alone; each source already returns its own hits in
+   relevance/popularity order, so position inside a source breaks the ties. */
+function titleCloseness(title, q){
+  const t = normTitle(title), n = normTitle(q);
+  if(!t || !n) return 0;
+  if(t===n) return 100;
+  if(t.startsWith(n)) return 80 - Math.min(18, (t.length-n.length)/5);
+  if(t.includes(n)) return 55;
+  const words = n.split(' ');
+  return 32 * (words.filter(w=>t.includes(w)).length / words.length);
+}
+async function searchAllSuggestions(q){
+  const lists = await Promise.all(SEARCH_KINDS.map(k=>searchSuggestions(k, q).catch(()=>[])));
+  const merged = [];
+  lists.forEach((list, li)=>{
+    list.slice(0,6).forEach((r, ix)=>{
+      merged.push({...r, kind:SEARCH_KINDS[li], score: titleCloseness(r.title, q) - ix*2.5});
+    });
+  });
+  merged.sort((a,b)=>b.score-a.score);
+  return merged.slice(0,8);
+}
 function onTitleInput(e){
   if(e.target.id!=='addSearch' && e.target.dataset.k!=='name') return;
   clearTimeout(suggestTimer);
@@ -1166,19 +1205,27 @@ function onTitleInput(e){
   const box = $('#titleSuggest');
   if(!box) return;
   if(q.length<2){ box.innerHTML=''; return; }
-  suggestTimer = setTimeout(()=>runSuggest(S.tab, q), 400);
+  const all = S.addStep==='search';   // the manual form stays scoped to its own kind
+  if(all) box.innerHTML = `<div class="suggest-note">Searching films, TV, games and books…</div>`;
+  suggestTimer = setTimeout(()=>runSuggest(all ? null : S.tab, q), 400);
 }
 async function runSuggest(k, q){
   const seq = ++suggestSeq;
-  const results = await searchSuggestions(k, q);
+  const results = k
+    ? (await searchSuggestions(k, q)).map(r=>({...r, kind:k}))
+    : await searchAllSuggestions(q);
   const box = $('#titleSuggest');
   if(seq!==suggestSeq || !box) return; // a newer keystroke superseded this search
   lastSuggestResults = results;
-  if(!results.length){ box.innerHTML=''; return; }
+  if(!results.length){
+    box.innerHTML = k ? '' : `<div class="suggest-note">Nothing found — try fewer words, or enter it manually.</div>`;
+    return;
+  }
   box.innerHTML = results.map(r=>`
-    <button type="button" class="suggest-row" data-sid="${esc(String(r.id))}">
+    <button type="button" class="suggest-row" data-sid="${esc(r.kind+':'+r.id)}">
       ${r.thumb?`<img src="${esc(r.thumb)}" alt="">`:'<span class="suggest-thumb-empty"></span>'}
       <span class="suggest-meta"><span class="suggest-title">${esc(r.title)}</span><span class="suggest-year">${esc(r.year||'')}</span></span>
+      <span class="suggest-kind">${esc(TYPE_LABELS[r.kind]||'')}</span>
     </button>`).join('');
 }
 async function fillFromSuggestion(k, picked){
@@ -1456,7 +1503,7 @@ function computeCurrently(){ return computeCurrentlyFrom(allRows()); }
 /* opens the add form pre-set to the right category with the
    "currently…" toggle already on — so cover fetch etc. all just work */
 function quickAddCurrent(k){
-  S.tab = k;
+  if(COLLECTIONS[k]) S.tab = k;   // "any" keeps the last kind; the search covers all four anyway
   openEdit(null);
   S.editing.status = 'inProgress';
   S.editing.inProgress = true;
@@ -1496,7 +1543,7 @@ function renderHome(){
   $('#list').innerHTML = `
     <div class="hero">
       <div class="hero-cur">
-        <div class="hero-h"><span class="lbl">Currently</span><span class="sub">${cur.length} in progress</span></div>
+        <div class="hero-h"><span class="lbl">Currently</span><span class="sub">${cur.length} in progress</span><span class="rule"></span><button type="button" class="hero-add" data-quick-add="any">+ Add</button></div>
         <div class="current-cards">${curCards}</div>
       </div>
       <div class="hero-recent">
@@ -1515,14 +1562,13 @@ function renderTable(){
   const sortVal = `${S.sortKey}:${S.sortDir}`;
   const sortOpts = [['date:-1','Newest first'],['date:1','Oldest first'],['name:1','Title A–Z'],['name:-1','Title Z–A']];
   const sortSel = `<label class="tsel"><span>Sort</span><select id="sortSel">${sortOpts.map(([v,l])=>`<option value="${v}"${v===sortVal?' selected':''}>${l}</option>`).join('')}</select></label>`;
-  const body = rows.length ? rows.map((r,ix)=>{
+  const body = rows.length ? rows.map(r=>{
     const yr = itemYear(r.k, r.item) || '';
     const cr = r.item[creatorField(r.k)] || '';
     const dstr = fmtDate(dateAddedOf(r));
     const subParts = [TYPE_LABELS[r.k], yr, (dstr!=='—'?dstr:'')].filter(Boolean).join(' · ');
     const stars = quadSwatchHTML(quadOf(r.item, r.c.scale));
     return `<tr data-open="${r.k}:${r.item.id}">
-      <td class="cell-idx col-idx num">${String(ix+1).padStart(2,'0')}</td>
       <td class="col-title"><div class="titlecell"><div class="swatch" style="${bgStyle(r.item)}"></div><div class="t"><span class="cell-title">${esc(r.item.name||'Untitled')}</span><span class="row-rate">${stars}</span><span class="row-sub">${subParts}</span></div></div></td>
       <td class="col-creator cell-creator">${esc(String(cr))}</td>
       <td class="col-type"><span class="typebadge">${TYPE_LABELS[r.k]}</span></td>
@@ -1530,7 +1576,7 @@ function renderTable(){
       <td class="col-date cell-date">${dstr}</td>
       <td class="col-rating"><div class="ratecell">${stars}</div></td>
     </tr>`;
-  }).join('') : `<tr><td colspan="7"><div class="empty"><b>Nothing here</b>Try a different filter or search.</div></td></tr>`;
+  }).join('') : `<tr><td colspan="6"><div class="empty"><b>Nothing here</b>Try a different filter or search.</div></td></tr>`;
   const unratedChip = S.unratedOnly
     ? `<button class="pill" data-clear-unrated="1" aria-pressed="true" style="background:var(--sig);color:#fff;border-color:var(--sig)">Needs rating ✕</button>`
     : '';
@@ -1542,7 +1588,6 @@ function renderTable(){
     </div>
     <table class="mtable">
       <thead><tr>
-        <th class="col-idx num">#</th>
         <th class="col-title sortable" data-sort="name">Title${arr('name')}</th>
         <th class="col-creator">Creator</th>
         <th class="col-type">Type</th>
@@ -1977,6 +2022,7 @@ function renderProfile(target){
   const curHTML = inProgress.length ? `
     <div class="hero-h" style="margin:30px 0 14px">
       <span class="lbl">Currently</span><span class="sub">${inProgress.length} in progress</span><span class="rule"></span>
+      ${ctx.isSelf ? `<button type="button" class="hero-add" data-quick-add="any">+ Add</button>` : ''}
     </div>
     <div class="pf-cur">${curCards}</div>` : '';
 
@@ -2519,6 +2565,9 @@ function renderStatusPick(){
 }
 function setEditChrome(mode){
   const on = mode!=='search';
+  /* the kind picker is only a fallback now: one search covers every source, so
+     it appears solely on the manual form, and not when the kind is already known */
+  $('#typePick').style.display = (mode==='form' && !S.editing.id && !S.typeLocked) ? 'flex' : 'none';
   $('#coverRow').style.display = mode==='form' ? 'flex' : 'none';
   $('#ratingWrap').style.display = on ? 'block' : 'none';
   $('#saveEdit').style.display = on ? 'block' : 'none';
@@ -2532,21 +2581,19 @@ function openEdit(item){
   if(!S.session){ S.authMode = S.authMode || 'up'; openAuth(); return; }
   const c = COLLECTIONS[S.tab];
   S.editing = item ? {...item} : {id:null, rating:null, rx:null, ry:null, status:'completed'};
+  S.typeLocked = false;
   if(!S.editing.status) S.editing.status = 'completed';
   /* one-way conversion of an old rating: y from the score, x unknown */
   if(S.editing.ry==null && S.editing.rating!=null){
     S.editing.ry = Math.round((S.editing.rating/c.scale)*200-100);
     S.editing.rx = null;
   }
-  $('#editTitle').textContent = item ? 'Edit' : 'Add '+c.label.toLowerCase().replace(/s$/,'');
+  $('#editTitle').textContent = item ? 'Edit' : 'Add';
   $('#delEdit').style.display = item ? 'block' : 'none';
   $('#rlabel').textContent = 'Rating';
 
-  const tp = $('#typePick');
-  if(item){ tp.style.display='none'; }
-  else {
-    tp.style.display='flex';
-    tp.innerHTML = ['films','games','tv','books'].map(k=>
+  if(!item){
+    $('#typePick').innerHTML = ['films','games','tv','books'].map(k=>
       `<button type="button" data-addtype="${k}" aria-pressed="${S.tab===k}">${TYPE_LABELS[k]}</button>`).join('');
   }
 
@@ -2561,10 +2608,10 @@ function openEdit(item){
 }
 /* ---- add step 1: just a search bar ---- */
 function renderAddSearch(){
-  const c = COLLECTIONS[S.tab];
   S.addStep = 'search';
+  if(!S.editing.id) $('#editTitle').textContent = 'Add';
   $('#fields').innerHTML = `
-    <label class="f"><span>Search</span><input class="in" id="addSearch" placeholder="Start typing a title…" autocomplete="off"></label>
+    <label class="f"><span>Search films, TV, games &amp; books</span><input class="in" id="addSearch" placeholder="Start typing a title…" autocomplete="off"></label>
     <div class="suggest-list" id="titleSuggest"></div>
     <div class="acts" style="margin-top:6px">
       <button type="button" class="btn ghost" id="manualAddBtn">Can't find it? Enter manually</button>
@@ -2587,6 +2634,7 @@ function renderAddManual(){
 async function openAddDetail(picked){
   const k = S.tab, e = S.editing;
   S.addStep = 'detail';
+  if(!e.id) $('#editTitle').textContent = 'Add '+COLLECTIONS[k].label.toLowerCase().replace(/s$/,'');
   const crK = creatorField(k), yrK = yearField(k);
   e.name = picked.title;
   if(picked.id!=null) e.srcId = String(picked.id); // external source id → extra.srcId, for cross-user matching
@@ -2637,7 +2685,7 @@ function renderAddDetail(){
   const crK = creatorField(k), yrK = yearField(k);
   const dateF = (c.recentFields||[])[0];
   const dateLbl = {dateWatched:'Date watched', datePlayed:'Date played', dateRead:'Date read'}[dateF] || 'Date';
-  const sub = [e[crK], itemYear(k, e)].filter(Boolean).join(' · ');
+  const sub = [TYPE_LABELS[k], e[crK], itemYear(k, e)].filter(Boolean).join(' · ');
   $('#fields').innerHTML = `
     <div class="add-preview">
       ${e.coverUrl?`<img class="add-preview-cover" src="${esc(e.coverUrl)}" alt="">`:'<div class="add-preview-cover"></div>'}
@@ -2818,7 +2866,7 @@ function addFromViewed(){
   copy.status='completed'; copy.inProgress=false;
   const dateF = (COLLECTIONS[v.k].recentFields||[])[0]; if(dateF) copy[dateF]=null;
   Object.assign(S.editing, copy);
-  $('#typePick').style.display='none';
+  S.typeLocked = true;   // the kind came from the item being copied
   renderAddManual();
 }
 async function logFinished(k, id){
@@ -2914,9 +2962,19 @@ $('#addBtn').addEventListener('click', ()=>{
 $('#reloadBtn').addEventListener('click', ()=>{ if(S.session) loadFromSupa().then(()=>toast('Reloaded')); });
 $('#themeBtn').addEventListener('click', ()=>{ renderThemeGrid(); openSheet('#themeSheet'); });
 $('#syncStatus').addEventListener('click', ()=>{ S.session ? openSet() : openAuth(); });
+/* only reachable from the manual form — switching kind swaps the field set but
+   keeps the title and anything already rated */
 $('#typePick').addEventListener('click', e=>{
   const b = e.target.closest('[data-addtype]'); if(!b) return;
-  S.tab = b.dataset.addtype; openEdit(null);
+  const nameEl = $('#fields').querySelector('[data-k="name"]');
+  const name = nameEl ? nameEl.value : '';
+  const keep = {rx:S.editing.rx, ry:S.editing.ry, status:S.editing.status};
+  S.tab = b.dataset.addtype;
+  openEdit(null);
+  Object.assign(S.editing, keep);
+  renderAddManual();
+  const n2 = $('#fields').querySelector('[data-k="name"]');
+  if(n2 && name) n2.value = name;
 });
 $('#settingsBtn').addEventListener('click', openSet);
 $('#scrim').addEventListener('click', closeSheets);
@@ -3413,9 +3471,12 @@ $('#fields').addEventListener('click', e=>{
   if(e.target.closest('#editFieldsBtn')){ renderAddManual(); return; }
   const row = e.target.closest('[data-sid]'); if(!row) return;
   e.preventDefault();
-  const picked = lastSuggestResults.find(r=>String(r.id)===row.dataset.sid);
+  const picked = lastSuggestResults.find(r=>r.kind+':'+r.id===row.dataset.sid);
   if(!picked) return;
-  if(S.addStep==='search') openAddDetail(picked);
+  if(S.addStep==='search'){
+    S.tab = picked.kind;   // the pick decides the kind, not a picker up front
+    openAddDetail(picked);
+  }
   else fillFromSuggestion(S.tab, picked);
 });
 $('#statusPick').addEventListener('click', e=>{
