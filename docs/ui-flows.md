@@ -116,6 +116,10 @@ class in the markup: `.sheet` slides up from the bottom (add/edit, profile, dev 
 in / create account). A `.modal` must not carry a `.grab` handle — that's the bottom
 sheet's drag affordance and reads as broken on a centred pop-up.
 
+Most modals dismiss from a `Close` in their button row. Auth can't — its row is the mode
+toggle plus the submit — so it carries a top-right `.modal-x` instead, styled to match
+the rate queue's `.rq-x`.
+
 Settings holds account state only. Appearance opens from its own header button
 (`#themeBtn`), not from Settings, and one-time maintenance tools live in the dev menu
 behind the version stamp — currently the needs-rating filter, the rate backlog, and
