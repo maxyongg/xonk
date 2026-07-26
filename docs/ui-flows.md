@@ -1,10 +1,58 @@
 # UI flows
 
 *Read before touching the add/search flow, the duplicate warning, re-logging or log
-deletion, Currently cards, the compare modal's wiring, or any dialog's sheet-vs-modal
-presentation. Siblings: `data-model.md`
+deletion, Currently cards, the compare modal's wiring, the pre-auth welcome screen, or
+any dialog's sheet-vs-modal presentation. Siblings: `data-model.md`
 (what these flows write), `backend.md` (where it goes), `ROADMAP.md` (scoring, what's
 next). Keep this current — it is how the next session learns any of it.*
+
+## Welcome (pre-auth)
+
+`renderWelcome()` draws the wordmark, an animated rating graph, and the three buttons;
+`initWelcomeHero()` runs the graph. The `o` in the wordmark *is* the four-quadrant
+logo, so the reveal lifts it out of the word and grows it into the field — the point is
+that a visitor sees xonk rates on **two axes** before they have an account.
+
+- **Two columns above 760px, stacked below.** `.hero-lay` puts the actions beside the
+  graph on a desktop so the whole landing sits above the fold; on a phone it stacks. In
+  row mode the stage's margin has to be zeroed on *all four* sides — its `auto` side
+  margins would otherwise absorb the row's free space and shove the columns apart.
+- **The start position is measured, never hardcoded.** Each frame before the lift ends,
+  `measure()` compares the `o`'s box to the stage's and derives the translate + scale, so
+  the illusion holds at any font size or viewport width. It undoes the translate we
+  ourselves applied before measuring — `getBoundingClientRect` returns the *transformed*
+  box, and the stage is mid-reveal whenever this re-runs.
+- **Colour maths is the app's own** — `quadColorRGB` / `quadColor` / `paintQuadCanvas` /
+  `fmtSigned`, and the edge captions reuse `.quad-lab`. A private copy would let the
+  hero drift from the picker it is advertising.
+- **The tinted Sign in button computes its own ink.** The tint runs near-white at the
+  centre to deep blue/magenta at the rim, and one light/dark threshold is not enough —
+  mid-luminance tints fail against *both* inks (worst 2.33:1). `hCtaTint` tries both,
+  then walks the tint toward the opposite ink until it clears 4.6:1. Both inks come from
+  the live theme, not hex, so `midnight` works too. Never put a CSS transition on
+  `color` alone: background and ink must land on the same frame or the label crosses
+  unreadable mid-greys during a drag.
+- **Label plates get placed at runtime.** White text on the bright yellow-green half
+  measures ~1.6:1, so each title gets an opaque plate — which then has to clear the other
+  plates, the four edge captions, *and its own dot* (the dot is the rating). `hDeconflict`
+  tries candidate slots around each dot and takes the first that collides with nothing
+  placed yet, so the coordinates aren't load-bearing. It measures in the stage's own CSS
+  px because the stage is scaled down at that moment, and re-runs on `document.fonts.ready`.
+  If you change the anchors, label size or stage size, re-check: zero label↔label and
+  label↔caption overlaps, dot occlusion under ~10%.
+- **Labels are sized off the stage, not the viewport** (300px at every width → always the
+  compact 11px form, `short` where given). At 12px the long titles have no clash-free
+  slot and `hDeconflict` is forced to overlap them.
+- **One loop only.** `render()` calls `stopWelcomeHero()` before it draws anything, so
+  signing in, entering the demo, or a second signed-out `render()` can't stack loops. The
+  loop is driven by *both* rAF and a 33ms interval, de-duplicated on the wall clock —
+  rAF alone stalls while the document is hidden and strands the hero mid-reveal showing a
+  half-grown square.
+- `prefers-reduced-motion` skips the reveal (the clock starts past it) and parks the idle
+  marker instead of drifting it, but keeps presses rippling.
+- Anchors are hardcoded (`HERO_ANCHORS`). To make them live, pull five rated items spread
+  across quadrants and kinds from the demo-data edge function the way `enterDemo()` does,
+  falling back to the constant.
 
 ## Adding
 
@@ -63,10 +111,10 @@ the provisional lean penalty are documented in ROADMAP §2.
 ## Sheets vs. modals
 
 `openSheet(sel)` / `closeSheets()` drive both, so which one a dialog is comes down to the
-class in the markup: `.sheet` slides up from the bottom (add/edit, auth, profile, dev
-menu), `.modal` is centred over a scrim (item page, compare, settings, appearance). A
-`.modal` must not carry a `.grab` handle — that's the bottom sheet's drag affordance and
-reads as broken on a centred pop-up.
+class in the markup: `.sheet` slides up from the bottom (add/edit, profile, dev menu),
+`.modal` is centred over a scrim (item page, compare, settings, appearance, sign
+in / create account). A `.modal` must not carry a `.grab` handle — that's the bottom
+sheet's drag affordance and reads as broken on a centred pop-up.
 
 Settings holds account state only. Appearance opens from its own header button
 (`#themeBtn`), not from Settings, and one-time maintenance tools live in the dev menu

@@ -287,6 +287,57 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .home-hero{text-align:center;padding:18px 0 4px}
 .home-hero-num{font-family:var(--font-head);font-weight:700;font-size:52px;letter-spacing:-.02em;line-height:1}
 .home-hero-label{font-family:var(--font-body);font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;margin-top:6px}
+/* ---------- welcome hero: the o opens into a live rating graph ----------
+   Pre-auth only. The stage starts sitting exactly on top of the wordmark's
+   `o` (measured at runtime, see initWelcomeHero) and grows out of it, so the
+   visitor sees that xonk rates on two axes before they have an account. */
+.hero-stage{
+  position:relative;width:300px;height:300px;margin:26px auto 0;
+  background:var(--paper);border:1px solid var(--line);border-radius:50%;
+  overflow:hidden;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;
+}
+.hero-stage canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:inherit;pointer-events:none;opacity:0}
+.hero-stage .logo-full{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.hero-axes{position:absolute;inset:0;opacity:0;pointer-events:none}
+.hero-axes i{position:absolute;background:rgba(0,0,0,.18)}
+.hero-axes i.h{left:0;right:0;top:50%;height:1px}
+.hero-axes i.v{top:0;bottom:0;left:50%;width:1px}
+.hero-layer{position:absolute;inset:0;pointer-events:none}
+.hero-ripple{position:absolute;left:50%;top:50%;width:18px;height:18px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.9);transform:translate(-50%,-50%) scale(0);opacity:0;pointer-events:none}
+.hero-pick{position:absolute;left:50%;top:50%;width:16px;height:16px;border-radius:50%;
+  border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);transform:translate(-50%,-50%) scale(0);pointer-events:none}
+/* the graph and the actions stack on a phone and sit side by side on a wide
+   screen, where two columns keep the whole landing above the fold */
+.hero-lay{display:flex;flex-direction:column;align-items:center}
+.hero-side{width:100%;max-width:340px}
+@media(min-width:760px){
+  .hero-lay{flex-direction:row;justify-content:center;align-items:center;gap:40px;margin-top:26px}
+  /* all four sides: the stage's `auto` side margins would otherwise absorb the
+     row's free space and shove the column apart */
+  .hero-stage{margin:0}
+  .hero-side{width:340px}
+  .hero-read{margin:0 0 16px;max-width:none}
+  .hero-acts .acts{margin-top:0}
+}
+.hero-read{display:flex;align-items:center;gap:10px;margin:10px auto 0;max-width:300px}
+.hero-chip{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.15);background:var(--ink-3);opacity:0}
+.hero-readout{flex:1;font-family:var(--font-body);font-size:12px;color:var(--mute);line-height:1.4}
+.hero-acts{opacity:0}
+/* pill buttons, tighter than the app's .btn — scoped so the rest of the app
+   keeps its own. 44px measured height is the mobile hit-target floor: don't
+   trim the padding, the demo button already sits exactly on it. */
+.hero-acts .acts{max-width:340px;margin:20px auto 0}
+.hero-acts .acts + .acts{margin-top:9px}
+.hero-acts .btn{padding:13px;border-radius:999px;font-size:14px}
+.hero-acts .btn.ghost{background:none;color:var(--ink);border:1px solid #b9b3a5}
+.hero-acts .btn.primary{background:var(--ink);color:var(--paper);border:1px solid rgba(0,0,0,.14)}
+.hero-acts .btn.tertiary{flex:1;background:none;color:var(--ink);border:1px solid var(--line);font-size:13.5px}
+@media(prefers-reduced-motion:reduce){
+  /* the reveal is skipped (the clock is clamped to its end); this only keeps
+     the square from flashing as a circle before the first frame runs */
+  .hero-stage{border-radius:3.4%}
+}
 .home-recent-row{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid var(--line);cursor:pointer}
 .home-recent-row:last-child{border-bottom:none}
 .current-row{display:flex;align-items:center;gap:16px;padding:14px 4px;border-bottom:1px solid var(--line);cursor:pointer}
@@ -893,9 +944,8 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   </div>
 </div>
 
-<!-- account sheet -->
-<div class="sheet" id="authSheet" role="dialog" aria-modal="true">
-  <div class="grab"></div>
+<!-- account (sign in / create) — centered modal -->
+<div class="modal" id="authSheet" role="dialog" aria-modal="true">
   <h2 id="authTitle">Sign in</h2>
   <p class="note">Your list now lives in an account, so it works on any device and can be compared with friends' lists.</p>
   <label class="f"><span>Username — 3–20 chars, a–z 0–9 _</span><input class="in" id="authUser" autocomplete="username"></label>
@@ -962,7 +1012,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.26e</div>
+<div class="version" id="verStamp">xonk v2026.07.26f</div>
 
 <script>
 /* ================= config ================= */
@@ -2566,6 +2616,7 @@ function openCompare(target){
 }
 
 function render(){
+  stopWelcomeHero();   /* whatever we render next replaces the hero's DOM */
   if(!S.session && !S.demo){ renderWelcome(); return; }
   /* directory + other-user profiles are a signed-in feature */
   if((S.view==='people' || S.view==='user') && !S.session){ S.view='profile'; S.profileTarget=null; }
@@ -2611,19 +2662,354 @@ async function enterDemo(){
   render();
   window.scrollTo({top:0});
 }
+const LOGO_O_SVG = `<path d="M10 10L10 1A9 9 0 0 1 19 10Z" fill="#4fae57"/><path d="M10 10L19 10A9 9 0 0 1 10 19Z" fill="#dc8b3e"/><path d="M10 10L10 19A9 9 0 0 1 1 10Z" fill="#d0487e"/><path d="M10 10L1 10A9 9 0 0 1 10 1Z" fill="#4b82d6"/>`;
 function renderWelcome(){
   setNavActive();
   $('#list').innerHTML = `
-    <div class="home-hero" style="padding:64px 0 8px">
-      <div class="brand" style="font-size:56px">x<svg class="logo-o" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 10L10 1A9 9 0 0 1 19 10Z" fill="#4fae57"/><path d="M10 10L19 10A9 9 0 0 1 10 19Z" fill="#dc8b3e"/><path d="M10 10L10 19A9 9 0 0 1 1 10Z" fill="#d0487e"/><path d="M10 10L1 10A9 9 0 0 1 10 1Z" fill="#4b82d6"/></svg>nk</div>
+    <div class="home-hero" style="padding:30px 0 0">
+      <div class="brand" style="font-size:56px">x<svg class="logo-o" id="heroBrandO" viewBox="0 0 20 20" aria-hidden="true">${LOGO_O_SVG}</svg>nk</div>
     </div>
-    <div class="acts" style="max-width:340px;margin:22px auto 0">
-      <button class="btn ghost" id="welcomeUp">Create account</button>
-      <button class="btn primary" id="welcomeIn">Sign in</button>
-    </div>
-    <div class="acts" style="max-width:340px;margin:10px auto 0">
-      <button class="btn ghost" id="welcomeDemo" style="flex:1">Demo: Max's Account</button>
+    <div class="hero-lay">
+      <div class="hero-stage" id="heroStage">
+        <canvas id="heroField" aria-hidden="true"></canvas>
+        <svg class="logo-full" id="heroLogo" viewBox="0 0 20 20" aria-hidden="true">${LOGO_O_SVG}</svg>
+        <div class="hero-axes" id="heroAxes">
+          <i class="h"></i><i class="v"></i>
+          <span class="quad-lab top">Well made</span>
+          <span class="quad-lab bottom">Poorly made</span>
+          <span class="quad-lab left">Didn't enjoy</span>
+          <span class="quad-lab right">Enjoyed</span>
+        </div>
+        <div class="hero-layer" id="heroDots"></div>
+        <div class="hero-layer" id="heroAnchors"></div>
+        <div class="hero-ripple" id="heroRipple"></div>
+        <div class="hero-pick" id="heroPick"></div>
+      </div>
+      <div class="hero-side">
+        <div class="hero-read">
+          <span class="hero-chip" id="heroChip"></span>
+          <span class="hero-readout" id="heroReadout">Tap anywhere on the graph to rate</span>
+        </div>
+        <div class="hero-acts" id="heroActs">
+          <div class="acts">
+            <button class="btn ghost" id="welcomeUp">Create account</button>
+            <button class="btn primary" id="welcomeIn">Sign in</button>
+          </div>
+          <div class="acts">
+            <button class="btn tertiary" id="welcomeDemo">Demo: Max's Account</button>
+          </div>
+        </div>
+      </div>
     </div>`;
+  initWelcomeHero();
+}
+
+/* ================= welcome hero animation =================
+   The `o` in the wordmark is already the four-quadrant logo, so the reveal
+   lifts it out of the word and grows it into the real rating field: logo
+   crossfades to the painted canvas, axes and a handful of demo titles land on
+   it, then it goes live — drag anywhere and the chip, readout and Sign in
+   button take that rating's colour. Colour maths is the app's own
+   (quadColorRGB / quadColor / paintQuadCanvas / fmtSigned) so the hero can
+   never drift from the picker it is advertising. */
+const HERO_T = { LIFT0:700, LIFT1:1650, FADE:1000, AXES:1500, ANCH:1850, CLOUD:2650, ACTS:4050, LIVE:4300 };
+/* five demo-account rows, spread across the quadrants and the four kinds.
+   `short` is used under 360px, where the full plate can't fit beside its dot. */
+const HERO_ANCHORS = [
+  { t:'12 Angry Men',          x:80,  y:84 },
+  { t:'Pale Fire',             x:-40, y:70 },
+  { t:'Taskmaster',            x:88,  y:22 },
+  { t:'Binding of Isaac',      x:66,  y:-24 },
+  { t:'2001: A Space Odyssey', x:8,   y:64, short:'2001' }
+];
+const hClamp01 = t => t<0?0:t>1?1:t;
+const hEaseOut = t => 1-Math.pow(1-hClamp01(t),3);
+const hEaseInOut = t => { t=hClamp01(t); return t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; };
+/* back-out overshoot — every dot enters with it */
+const hPop = t => { t=hClamp01(t); const s=1.9; return 1+(s+1)*Math.pow(t-1,3)+s*Math.pow(t-1,2); };
+const hPctX = v => (v+100)/200*100;
+const hPctY = v => (100-v)/200*100;
+/* the two inks come from the live theme, not from hardcoded hex — the hero has
+   to stay readable whichever theme is applied */
+let HERO_INK = { a:[34,38,31], b:[244,241,236] };
+function hCssRGB(c){ return `rgb(${c[0]},${c[1]},${c[2]})`; }
+function hParseColor(v){
+  v = String(v).trim();
+  if(v[0]==='#'){
+    if(v.length===4) v = '#'+v[1]+v[1]+v[2]+v[2]+v[3]+v[3];
+    return [parseInt(v.slice(1,3),16), parseInt(v.slice(3,5),16), parseInt(v.slice(5,7),16)];
+  }
+  const m = v.match(/[\d.]+/g);
+  return m ? [Math.round(+m[0]), Math.round(+m[1]), Math.round(+m[2])] : [0,0,0];
+}
+function hRelLum(c){
+  const f = v=>{ v/=255; return v<=.03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); };
+  return .2126*f(c[0]) + .7152*f(c[1]) + .0722*f(c[2]);
+}
+function hContrast(a, b){ const x=hRelLum(a), y=hRelLum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); }
+/* Ink for the tinted Sign in button. The tint runs from near-white at the
+   field's centre to deep blue/magenta at the rim, and a single light/dark
+   threshold is not enough — mid-luminance tints fail against both inks (worst
+   measured 2.33:1). So try both inks against the pure tint and, only if
+   neither clears, walk the tint toward the opposite ink until it does: hue
+   survives, tone moves by at most 20%. Swept the field at 5-unit steps:
+   0 failures, worst 4.6:1. */
+function hCtaTint(rgb){
+  const inks = [HERO_INK.a, HERO_INK.b];
+  for(let m=0; m<=1.0001; m+=0.05){
+    for(let i=0; i<2; i++){
+      const ink = inks[i], away = inks[1-i];
+      const bg = rgb.map((c,j)=>Math.round(c + (away[j]-c)*m));
+      if(hContrast(bg, ink) >= 4.6)
+        return { bg:hCssRGB(bg), ink:hCssRGB(ink), edge: i ? 'rgba(255,255,255,.28)' : 'rgba(0,0,0,.16)' };
+    }
+  }
+  return { bg:hCssRGB(HERO_INK.a), ink:hCssRGB(HERO_INK.b), edge:'rgba(255,255,255,.28)' };
+}
+/* deterministic filler cloud — the rest of the library, unlabelled */
+function hRng(a){
+  return function(){
+    a|=0; a = a+0x6D2B79F5|0;
+    let t = Math.imul(a^a>>>15, 1|a);
+    t = t+Math.imul(t^t>>>7, 61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+function hCloud(n, seed){
+  const r = hRng(seed), out = [];
+  for(let i=0;i<n;i++){
+    const a=r(), b=r(), c=r();
+    out.push({ x: Math.max(-94, Math.min(94, (a*2-1)*52 + 24 + (c-.5)*34)),
+               y: Math.max(-94, Math.min(94, (b*2-1)*46 + 32 + (a-.5)*38)) });
+  }
+  return out;
+}
+function hMkDot(x, y, size, filled){
+  const d = document.createElement('div');
+  d.style.cssText = 'position:absolute;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%) scale(0)';
+  d.style.width = size+'px'; d.style.height = size+'px';
+  d.style.left = hPctX(x)+'%'; d.style.top = hPctY(y)+'%';
+  if(filled){
+    d.style.background = quadColor(x, y);
+    d.style.border = '2px solid #fff';
+    d.style.boxShadow = '0 0 0 1px rgba(0,0,0,.35),0 1px 3px rgba(0,0,0,.5)';
+  } else {
+    d.style.background = 'rgba(255,255,255,.95)';
+    d.style.boxShadow = '0 0 0 .7px rgba(0,0,0,.45)';
+    d.style.opacity = '.62';
+  }
+  return d;
+}
+/* Titles sit on the painted field, whose top-right half is bright yellow-green
+   — plain white text there measures ~1.6:1. So each title gets a solid plate
+   and the plate's ink is picked against the field colour underneath it
+   (12.2–13.4:1 measured). */
+function hMkLabel(a, size, brief){
+  const l = document.createElement('div');
+  l.textContent = brief && a.short ? a.short : a.t;
+  const rgb = quadColorRGB(a.x, a.y);
+  const useA = hContrast(rgb, HERO_INK.a) >= hContrast(rgb, HERO_INK.b);
+  const ink = useA ? HERO_INK.a : HERO_INK.b, plate = useA ? HERO_INK.b : HERO_INK.a;
+  l.style.cssText = 'position:absolute;white-space:nowrap;font-weight:600;letter-spacing:.02em;'+
+    'pointer-events:none;opacity:0;border-radius:4px;line-height:1.35;box-shadow:0 1px 4px rgba(0,0,0,.22)';
+  l.style.fontFamily = 'var(--font-body),sans-serif';
+  l.style.color = hCssRGB(ink);
+  l.style.background = `rgba(${plate[0]},${plate[1]},${plate[2]},${useA ? .94 : .9})`;
+  l.style.padding = Math.round(size*0.22)+'px '+Math.round(size*0.45)+'px';
+  l.style.fontSize = size+'px';
+  l.style.left = hPctX(a.x)+'%'; l.style.top = hPctY(a.y)+'%';
+  l.style.transform = 'translate(-50%,-50%)';   /* hDeconflict picks the real slot */
+  l.dataset.below = a.y > 62 ? '1' : '0';
+  return l;
+}
+/* Opaque plates have to clear three things at once: each other, the four edge
+   captions, and their own anchor dot — the dot IS the rating, so a plate over
+   it destroys the graph. Nudging along one axis can't satisfy all three, so
+   each label takes the first slot around its dot that collides with nothing
+   already placed. Hand-tuned coordinates are therefore not load-bearing.
+   Measured in the stage's own CSS pixels: the stage is mid-reveal (scaled down
+   onto the `o`) whenever this runs, so every rect is un-scaled first. */
+function hDeconflict(stage, labels, dots){
+  const sr = stage.getBoundingClientRect();
+  const W = stage.offsetWidth, H = stage.offsetHeight;
+  if(!W || sr.width < 1) return;
+  const sc = sr.width / W;
+  const rect = e=>{
+    const b = e.getBoundingClientRect();
+    return { top:(b.top-sr.top)/sc, bottom:(b.bottom-sr.top)/sc,
+             left:(b.left-sr.left)/sc, right:(b.right-sr.left)/sc };
+  };
+  const hit = (a,b)=> a.left<b.right+3 && b.left<a.right+3 && a.top<b.bottom+3 && b.top<a.bottom+3;
+  const inside = b=> b.top>=1 && b.left>=1 && b.bottom<=H-1 && b.right<=W-1;
+  const blocked = [];
+  stage.querySelectorAll('.hero-axes span').forEach(e=>blocked.push(rect(e)));
+  dots.forEach(d=>blocked.push(rect(d)));
+  labels.forEach(l=>{
+    const box = rect(l), w = box.right-box.left, h = box.bottom-box.top;
+    const R = 11, gapY = h/2+R, gapX = w/2+R;
+    const vy = l.dataset.below==='1' ? [gapY,-gapY] : [-gapY,gapY];
+    const slots = [];
+    vy.forEach(y=>slots.push([0,y],[-gapX*0.55,y],[gapX*0.55,y]));
+    slots.push([-gapX,0],[gapX,0]);
+    vy.forEach(y=>slots.push([-gapX,y],[gapX,y],[0,y*1.85]));
+    let best = null, bestScore = -1e9;
+    for(const [mx,my] of slots){
+      l.style.marginLeft = mx+'px'; l.style.marginTop = my+'px';
+      const b = rect(l); if(!inside(b)) continue;
+      const clash = blocked.some(k=>hit(b,k));
+      const score = (clash?-1000:0) - Math.abs(mx)*0.6 - Math.abs(my)*0.3;
+      if(score>bestScore){ bestScore=score; best=[mx,my]; }
+      if(!clash) break;
+    }
+    if(!best) best = [0, vy[0]];
+    l.style.marginLeft = best[0]+'px'; l.style.marginTop = best[1]+'px';
+    blocked.push(rect(l));
+  });
+}
+/* one loop at a time: render() re-runs renderWelcome on every state change, and
+   signing in or entering the demo navigates away from the hero entirely */
+let heroGen = 0, heroTimer = 0;
+function stopWelcomeHero(){
+  heroGen++;
+  if(heroTimer){ clearInterval(heroTimer); heroTimer = 0; }
+}
+function initWelcomeHero(){
+  stopWelcomeHero();
+  const gen = heroGen;
+  const stage = $('#heroStage'), brandO = $('#heroBrandO'), cv = $('#heroField');
+  const logo = $('#heroLogo'), axes = $('#heroAxes');
+  const dotsEl = $('#heroDots'), anchEl = $('#heroAnchors');
+  const chip = $('#heroChip'), readout = $('#heroReadout'), acts = $('#heroActs');
+  const pick = $('#heroPick'), rip = $('#heroRipple'), cta = $('#welcomeIn');
+  if(!stage) return;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const cs = getComputedStyle(document.documentElement);
+  HERO_INK = { a: hParseColor(cs.getPropertyValue('--ink')), b: hParseColor(cs.getPropertyValue('--paper')) };
+
+  paintQuadCanvas(cv);
+  /* sized off the stage, not the viewport: the stage is 300px at every width,
+     so the plates are always the compact form. At 12px with full titles the
+     long ones have no clash-free slot left and hDeconflict has to overlap them. */
+  const brief = stage.clientWidth < 360, labelSize = brief ? 11 : 12;
+  const cds = hCloud(52, 7).map(d=>{ const e = hMkDot(d.x, d.y, 5, false); dotsEl.appendChild(e); return e; });
+  const ads = HERO_ANCHORS.map(a=>{
+    const e = hMkDot(a.x, a.y, 13, true); anchEl.appendChild(e);
+    const l = hMkLabel(a, labelSize, brief); anchEl.appendChild(l);
+    return {e, l};
+  });
+  const place = ()=>{ if(gen===heroGen) hDeconflict(stage, ads.map(d=>d.l), ads.map(d=>d.e)); };
+  place();
+  /* web fonts land after first paint on a cold load and change every plate's
+     width, so the slots are picked again once they're in */
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(place);
+
+  /* pointer position, in rating units (−100..100) */
+  const ptr = {over:false, x:0, y:0, press:0};
+  const toXY = e=>{
+    const r = stage.getBoundingClientRect();
+    ptr.x = Math.max(-100, Math.min(100, ((e.clientX-r.left)/r.width)*200-100));
+    ptr.y = Math.max(-100, Math.min(100, (1-(e.clientY-r.top)/r.height)*200-100));
+  };
+  stage.addEventListener('pointerenter', e=>{ ptr.over=true; toXY(e); });
+  stage.addEventListener('pointermove',  e=>{ ptr.over=true; toXY(e); });
+  stage.addEventListener('pointerleave', ()=>{ ptr.over=false; });
+  stage.addEventListener('pointerdown',  e=>{ toXY(e); ptr.press=performance.now(); });
+
+  let geom = null, tx0 = 0, ty0 = 0, cur = {x:0, y:0}, lastPress = -1e9, pressT = null;
+  const t0 = performance.now();
+
+  /* the stage's start position is measured, not hardcoded, so the illusion is
+     exact at any font size or viewport width. The stage is already carrying
+     our transform by the time this re-runs, so undo the translate to get back
+     to its resting box (scaling about the centre doesn't move the centre). */
+  function measure(){
+    const so = brandO.getBoundingClientRect(), ss = stage.getBoundingClientRect();
+    const w = stage.offsetWidth;
+    if(!w || ss.width < 1 || !so.width) return null;
+    return { dx:(so.left+so.width/2) - (ss.left+ss.width/2 - tx0),
+             dy:(so.top+so.height/2) - (ss.top+ss.height/2 - ty0),
+             s: so.width/w };
+  }
+
+  function frame(now){
+    /* reduced motion: skip the reveal by starting past it, but let the clock
+       run so a press still ripples */
+    const t = reduce ? (now-t0) + HERO_T.LIVE + 600 : now-t0;
+
+    if(!geom || t < HERO_T.LIFT1){ const g = measure(); if(g) geom = g; }
+    if(!geom) return;
+    const k = hEaseInOut((t-HERO_T.LIFT0)/(HERO_T.LIFT1-HERO_T.LIFT0));
+    const wob = t < HERO_T.LIFT0 ? 1+.035*Math.sin(t/260) : 1;   /* idle breath before the lift */
+    tx0 = geom.dx*(1-k); ty0 = geom.dy*(1-k);
+    stage.style.transform = `translate(${tx0}px,${ty0}px) scale(${(geom.s+(1-geom.s)*k)*wob})`;
+    stage.style.borderRadius = ((1-k)*50 + k*3.4)+'%';            /* circle → rounded square */
+
+    const fade = hClamp01((t-HERO_T.FADE)/500);
+    logo.style.opacity = String(1-fade);
+    cv.style.opacity = String(fade);
+    axes.style.opacity = String(hClamp01((t-HERO_T.AXES)/420));
+
+    ads.forEach((d,i)=>{
+      d.e.style.transform = 'translate(-50%,-50%) scale('+Math.max(0, hPop((t-(HERO_T.ANCH+i*190))/460))+')';
+      d.l.style.opacity = String(hClamp01((t-(HERO_T.ANCH+200+i*190))/380));
+    });
+    cds.forEach((e,i)=>{ e.style.transform = 'translate(-50%,-50%) scale('+Math.max(0, hPop((t-(HERO_T.CLOUD+i*26))/320))+')'; });
+
+    const av = hClamp01((t-HERO_T.ACTS)/520);
+    acts.style.opacity = String(av);
+    acts.style.transform = 'translateY('+((1-hEaseOut(av))*16)+'px)';
+
+    /* once live the marker idles on a slow lissajous until someone takes over;
+       hovering hands control straight to the pointer. Reduced motion parks it
+       instead of drifting. */
+    const live = t > HERO_T.LIVE;
+    let tgx, tgy;
+    if(ptr.over){ tgx = ptr.x; tgy = ptr.y; }
+    else if(reduce){ tgx = 16; tgy = 14; }
+    else { tgx = 56*Math.sin(t/2700)+16; tgy = 50*Math.sin(t/1900+1.1)+14; }
+    cur.x += (tgx-cur.x)*0.13; cur.y += (tgy-cur.y)*0.13;
+
+    if(ptr.press > lastPress){ lastPress = ptr.press; pressT = t; }
+    const squash = pressT!=null && (t-pressT)<300 ? 1+1.1*Math.pow(1-(t-pressT)/300, 2) : 1;
+    pick.style.opacity = live ? '1' : '0';
+    pick.style.left = hPctX(cur.x)+'%'; pick.style.top = hPctY(cur.y)+'%';
+    pick.style.transform = 'translate(-50%,-50%) scale('+(live?squash:0)+')';
+
+    if(pressT != null){
+      const rk = (t-pressT)/620;
+      if(rk>=0 && rk<=1){
+        rip.style.left = hPctX(cur.x)+'%'; rip.style.top = hPctY(cur.y)+'%';
+        rip.style.opacity = String((1-rk)*.85);
+        rip.style.transform = 'translate(-50%,-50%) scale('+(0.5+hEaseOut(rk)*3.4)+')';
+      } else rip.style.opacity = '0';
+    }
+
+    if(live){
+      const rgb = quadColorRGB(cur.x, cur.y);
+      chip.style.opacity = '1';
+      chip.style.background = hCssRGB(rgb);
+      readout.textContent = `Enjoyment ${fmtSigned(cur.x)} · Quality ${fmtSigned(cur.y)}`;
+      readout.style.color = 'var(--ink)';
+      /* background and ink must land on the same frame — transitioning colour
+         on its own drags the label through unreadable mid-greys (1.15:1) */
+      const on = hCtaTint(rgb);
+      cta.style.background = on.bg; cta.style.color = on.ink; cta.style.borderColor = on.edge;
+    }
+  }
+
+  /* rAF alone stalls while the document is hidden (background tab, embedded
+     preview panes), which leaves the hero frozen mid-reveal showing a
+     half-grown square. A timer drives the same step as a fallback; whichever
+     fires first owns the frame. */
+  let last = -1;
+  const step = ()=>{
+    const now = performance.now();
+    if(now-last < 11) return;
+    last = now; frame(now);
+  };
+  (function loop(){ if(gen!==heroGen) return; step(); requestAnimationFrame(loop); })();
+  heroTimer = setInterval(()=>{ if(gen!==heroGen){ clearInterval(heroTimer); return; } step(); }, 33);
 }
 function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 
