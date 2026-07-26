@@ -19,16 +19,20 @@ deploys immediately.**
   - `items` RLS: any authed user **reads all rows** (powers People + compare); writes own only.
   - `people_directory()` returns one aggregate row per account, so the directory never
     downloads anyone's library; a profile's items load on demand via `loadUserItems`
-    into `S.userData`. Raw item loads page through `selectAll` — PostgREST silently
+    into `S.userData`. Raw loads page through `selectAll` — PostgREST silently
     truncates at 1000 rows.
   - **Nothing applies `supabase-schema.sql` automatically** — it's pasted into the
     dashboard SQL editor by hand, so land new SQL *before* pushing JS that calls it.
 - **Adding**: one search hits all four sources at once (`searchAllSuggestions`, ranked
   by `titleCloseness`) — the kind comes from the result you pick, which is what sets
-  `S.tab`. The kind picker survives only on the manual fallback form.
-- **Compare** (`tm*` functions): `tmPair` pairs shared works, `tasteMatch` scores,
-  `tmPanelHTML` renders the modal. Only Max's items have `extra.srcId` backfilled, so
-  cross-account pairing mostly falls back to name+year. Details in ROADMAP §2.
+  `S.tab`. The kind picker survives only on the manual fallback form. Picking something
+  you already have warns rather than blocks (`showDupe`) and offers to re-log it
+  instead; all four insert paths run the check.
+- **"Same work?"** `sameWork()` is the single identity rule — exact `extra.srcId`, then
+  `kind + normName(name) + year` — shared by the duplicate check and compare's `tmPair`.
+  Don't give one a tier the other doesn't have.
+- **Compare** (`tm*` functions): `tmPair` pairs shared works on those two tiers, each
+  item pairing once; `tasteMatch` scores; `tmPanelHTML` renders the modal. ROADMAP §2.
 - **Edge functions** (`supabase/functions/`, deployed via dashboard): `media-search`
   proxies TMDB/RAWG (secrets `TMDB_KEY`/`RAWG_KEY`; books use Open Library, keyless);
   `demo-data` is public and serves the welcome screen's demo account.
@@ -41,9 +45,14 @@ deploys immediately.**
   `rowToItem` / `itemToRow`.
 - `rx` (enjoyment) / `ry` (quality). Legacy items have `rating` only → `quadOf` makes
   them quality-only (x = null, hollow ring).
-- `extra` jsonb holds what has no column: `status`, TV's `released` (first-episode air
-  date), `srcId`, leftovers. `in_progress` mirrors `status==='inProgress'`. `createdAt`
-  rides on the in-memory item but is stripped from `extra` on save.
+- A row is **a work, not a sitting**: re-consuming appends to `extra.logs` (dates) and
+  moves `date_logged` to the latest, with the rating staying single. Rows never
+  re-logged have no `logs` at all — `logsOf` derives `[date_logged]`, so there is
+  nothing to migrate; deleting back down to one drops the array again.
+- `extra` jsonb holds what has no column: `status`, `logs`, TV's `released`
+  (first-episode air date), `srcId`, leftovers. `in_progress` mirrors
+  `status==='inProgress'`. `createdAt` rides on the in-memory item but is stripped
+  from `extra` on save.
 - TV uses `released` (a date), not season fields; Games' creator field is `developer`,
   labelled "Studio".
 

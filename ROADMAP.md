@@ -1,9 +1,10 @@
 # xonk — roadmap
 
 Live: profile "You" page, People directory, quadrant rating, per-item status,
-item pages (1), 1-to-1 compare (2), one-search-all-sources adding. Find-community
-(3) is the remaining **main** feature, still being refined. Section numbers are
-referenced from CLAUDE.md and code comments — don't renumber.
+item pages (1), 1-to-1 compare (2), one-search-all-sources adding, one row per
+work (re-log instead of duplicating). Find-community (3) is the remaining
+**main** feature, still being refined. Section numbers are referenced from
+CLAUDE.md and code comments — don't renumber.
 
 **thelist** — a user's logged library. **significant similarity** — still to pin
 down: "these two rated a shared item similarly" (grid closeness and/or genre).
@@ -20,6 +21,8 @@ averages, top genre, a per-category scatter). Re-aim it at what the profile
   kind) or a **taste** timeline (a dot per item on date × rating, coloured by
   `quadColor`). The taste one is more distinctive and reuses existing colour code,
   but needs dense `date_logged` — check coverage across the ~900 rows first.
+  Re-watches are extra events on the same work (`extra.logs`), so the timeline
+  should read logs, not rows.
 - **Drift.** Rolling average enjoyment/quality over time, or a per-year centroid on
   the quadrant: "has my taste moved?" is the question a large library can answer.
 - The year bars (`renderOverviewStats`) are the only time series today and have no
@@ -34,13 +37,18 @@ match % (sub-scores on hover), verdict, overlay plot with a line per shared work
 "only divergent" toggle, closest-agreement / biggest-split call-outs. Under
 `TM_MIN` shared works it says so instead of pretending the number means anything.
 
-`tmPair` finds overlap in three tiers, each item pairing once: exact `extra.srcId`,
-then `(kind, name, year)`, then name alone — the last only when a year is missing
-on one side and the name is unambiguous, so a remake can't match its original.
-Only items **both users rated on both axes** count. `tasteMatch` maps the distance
-between the two dots to 0–100 (touching = 100, opposite corners = 200√2 = 0) and
-averages; the sub-scores run the same map one axis at a time, which is what
-explains *why* — enjoyment 90 / quality 40 = "same taste, different verdict".
+`tmPair` finds overlap on `sameWork()`'s two tiers, each item pairing once: exact
+`extra.srcId`, then `kind + normalised name + year`. Only items **both users rated
+on both axes** count. `tasteMatch` maps the distance between the two dots to 0–100
+(touching = 100, opposite corners = 200√2 = 0) and averages; the sub-scores run the
+same map one axis at a time, which is what explains *why* — enjoyment 90 /
+quality 40 = "same taste, different verdict".
+
+A name-only third tier was removed with the duplicate check: tolerable as a silent
+miss in compare, not as a false "you already logged this". **Beta testers (10 items
+each) are re-logging their libraries so every row carries `srcId`.** Once that
+lands, measure how often the name+year tier still fires before deciding whether it
+stays — manual adds never get an id, so it can't go entirely.
 
 ### ⚠ Lean penalty — provisional, needs assessment
 
@@ -94,11 +102,10 @@ after this is an RPC that does the *pairing* in SQL and returns only shared rows
 leaving scoring in JS — same payload win, no formula duplicated while the penalty
 is unsettled. Full server-side scoring is only forced by §3, which ranks you
 against every account at once; settle the penalty before freezing it into SQL.
-The hard part is `tmPair`: the name-only tier needs a uniqueness count, and "each
-item pairs once" is a greedy assignment (`DISTINCT ON` / `row_number()`), not a
-plain join.
+The hard part in `tmPair` is "each item pairs once" — a greedy assignment
+(`DISTINCT ON` / `row_number()`), not a plain join.
 
-Adding now fires 3 `media-search` invocations per debounced keystroke (one per
+Adding fires 3 `media-search` invocations per debounced keystroke (one per
 TMDB/RAWG source; books are keyless) instead of 1 — fine at beta volume, worth a
 longer debounce or a server-side fan-out if it ever bites.
 
@@ -111,4 +118,7 @@ longer debounce or a server-side fan-out if it ever bites.
   search (`searchAllSuggestions`) and the header search over thelist. Per-source:
   TMDB has no combined query, so it likely means searching the title term and
   re-ranking on the metadata term client-side; Open Library takes `&author=`.
+- **Finishing a Currently card doesn't append a log** — the ✓ only clears
+  `in_progress`. Wiring it up would double-count against the add flow, so it needs
+  a decision first.
 - **Letterboxd / Goodreads import** — CSV first (full history), RSS auto-sync later.
