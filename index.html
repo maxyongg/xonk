@@ -633,6 +633,16 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .suggest-kind{font-family:var(--font-body);font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
   color:var(--mute);border:1px solid var(--line);border-radius:5px;padding:3px 7px;flex:0 0 auto;white-space:nowrap}
 .suggest-note{font-family:var(--font-body);font-size:11.5px;color:var(--mute);padding:2px 2px 4px}
+.suggest-year .have{font-style:normal;font-weight:700;color:var(--sig)}
+/* already-logged warning + re-log step */
+.dupe-note{font-family:var(--font-body);font-size:13px;line-height:1.55;color:var(--ink);margin:2px 0 14px}
+.dupe-note b{font-weight:700}
+.dupe-dates{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 14px}
+.dupe-dates span{font-family:var(--font-body);font-size:11px;color:var(--mute);
+  border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+.acts.col{flex-direction:column}
+.btn.quiet{background:none;border:none;color:var(--mute);font-size:12.5px;padding:10px}
+.btn.quiet:hover{color:var(--ink)}
 .add-preview{display:flex;gap:14px;align-items:flex-start;margin:2px 0 12px}
 .add-preview-cover{width:74px;height:106px;border-radius:8px;object-fit:cover;background:var(--ink-3);flex:0 0 auto}
 .add-preview-meta{min-width:0}
@@ -653,6 +663,16 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
 .ip-rateval{font-family:var(--font-body);font-size:13px;color:var(--ink)}
 .ip-status{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
   padding:4px 9px;border-radius:999px;background:var(--ink-3);color:var(--ink)}
+.ip-logs{display:flex;flex-wrap:wrap;gap:6px}
+.ip-log{display:inline-flex;align-items:center;gap:2px;font-family:var(--font-body);font-size:12px;color:var(--ink);
+  border:1px solid var(--line);border-radius:999px;padding:4px 5px 4px 11px}
+.ip-log:has(>.ip-logx){padding-right:3px}
+.ip-logx{width:19px;height:19px;border-radius:50%;background:none;color:var(--mute);font-size:14px;line-height:1;
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.ip-logx:hover{background:var(--sig);color:#fff}
+.ip-times{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:5px;padding:4px 8px;color:var(--mute);white-space:nowrap}
+.cell-date .times{color:var(--ink);font-weight:700}
 .ip-status.inProgress{background:var(--acid);color:var(--on-accent)}
 .ip-status.dnf{background:var(--sig);color:#fff}
 .ip-desc{font-family:var(--font-body);font-size:13.5px;line-height:1.6;color:var(--ink);opacity:.85;
@@ -948,7 +968,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.26c</div>
+<div class="version" id="verStamp">xonk v2026.07.26d</div>
 
 <script>
 /* ================= config ================= */
@@ -1059,6 +1079,7 @@ const S = {
   view:'home', tab:'films', typeFilter:'all', q:'',
   sortKey:'date', sortDir:-1,
   curTop:{},          // which card is on top of each Currently stack
+  dupe:null,          // pending "you already logged this" decision
   data:{},
   cfg:{theme:'museum'},
   editing:null, statsCat:'overview', statsFilter:null,
@@ -1145,6 +1166,47 @@ function coverImgHTML(i){
     : `<div class="cover"></div>`;
 }
 
+/* ================= "same work?" =================
+   One definition, shared by the duplicate check and compare's pairing, so the
+   app can't decide two rows are the same work in one place and not the other.
+   Two tiers: the external source id, then kind + normalised name + year. The
+   old name-only tier is gone — it could match a remake to its original, which
+   is fine as a silent miss in compare but not as a warning in the user's face. */
+function normName(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
+function workKeys(k, name, year, srcId){
+  const nm = normName(name);
+  return {
+    src: (srcId!=null && srcId!=='') ? k+'|'+String(srcId) : null,
+    nmYr: (nm && year) ? k+'|'+nm+'|'+year : null
+  };
+}
+function sameWork(a, b){
+  return !!((a.src && a.src===b.src) || (a.nmYr && a.nmYr===b.nmYr));
+}
+function itemKeys(k, it){ return workKeys(k, it.name, itemYear(k, it), it.srcId); }
+/* the item already in your library that is this work, or null */
+function findExisting(k, cand, skipId){
+  const want = workKeys(k, cand.name, cand.year, cand.srcId);
+  if(!want.src && !want.nmYr) return null;
+  return ((S.data[k]&&S.data[k].items)||[])
+    .find(it => it.id!==skipId && sameWork(want, itemKeys(k, it))) || null;
+}
+
+/* ================= log history =================
+   A work is one row; consuming it again appends a date, never a second row.
+   Rows logged before this existed have no `logs` array — derive it from the
+   single date rather than migrating, so untouched rows stay as they are. */
+const LOG_VERB    = {films:'Watched', tv:'Watched', games:'Played', books:'Read'};
+const REPEAT_NOUN = {films:'re-watch', tv:'re-watch', games:'replay', books:'re-read'};
+const ING         = {films:'watching', tv:'watching', games:'playing', books:'reading'};
+function dateFieldOf(k){ return (COLLECTIONS[k].recentFields||[])[0]; }
+function logsOf(k, item){
+  if(Array.isArray(item.logs) && item.logs.length) return item.logs.slice();
+  const d = dateFieldOf(k) && item[dateFieldOf(k)];
+  return d ? [String(d)] : [];
+}
+function logCount(k, item){ return logsOf(k, item).length; }
+
 /* ---- title autocomplete: type a title, pick a match, autofill the rest ---- */
 let suggestTimer = null, suggestSeq = 0, lastSuggestResults = [];
 /* all TMDB/RAWG traffic goes through the media-search edge function,
@@ -1194,13 +1256,10 @@ async function searchSuggestions(k, q){
    at once and the hits are interleaved by how close each title sits to what was
    typed. The kind comes from whichever result you pick. */
 const SEARCH_KINDS = ['films','tv','games','books'];
-function normTitle(s){
-  return String(s||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
-}
 /* 0–100 on title closeness alone; each source already returns its own hits in
    relevance/popularity order, so position inside a source breaks the ties. */
 function titleCloseness(title, q){
-  const t = normTitle(title), n = normTitle(q);
+  const t = normName(title), n = normName(q);
   if(!t || !n) return 0;
   if(t===n) return 100;
   if(t.startsWith(n)) return 80 - Math.min(18, (t.length-n.length)/5);
@@ -1242,12 +1301,17 @@ async function runSuggest(k, q){
     box.innerHTML = k ? '' : `<div class="suggest-note">Nothing found — try fewer words, or enter it manually.</div>`;
     return;
   }
-  box.innerHTML = results.map(r=>`
-    <button type="button" class="suggest-row" data-sid="${esc(r.kind+':'+r.id)}">
+  /* flag what you already have before you click it, so the duplicate warning is
+     a backstop rather than the first you hear of it */
+  box.innerHTML = results.map(r=>{
+    const have = S.session ? findExisting(r.kind, {srcId:r.id, name:r.title, year:r.year}) : null;
+    const sub = [esc(String(r.year||'')), have?'<i class="have">✓ In your library</i>':''].filter(Boolean).join(' · ');
+    return `<button type="button" class="suggest-row${have?' is-have':''}" data-sid="${esc(r.kind+':'+r.id)}">
       ${r.thumb?`<img src="${esc(r.thumb)}" alt="">`:'<span class="suggest-thumb-empty"></span>'}
-      <span class="suggest-meta"><span class="suggest-title">${esc(r.title)}</span><span class="suggest-year">${esc(r.year||'')}</span></span>
+      <span class="suggest-meta"><span class="suggest-title">${esc(r.title)}</span><span class="suggest-year">${sub}</span></span>
       <span class="suggest-kind">${esc(TYPE_LABELS[r.kind]||'')}</span>
-    </button>`).join('');
+    </button>`;
+  }).join('');
 }
 async function fillFromSuggestion(k, picked){
   const box = $('#titleSuggest'); if(box) box.innerHTML='';
@@ -1617,14 +1681,15 @@ function renderTable(){
     const yr = itemYear(r.k, r.item) || '';
     const cr = r.item[creatorField(r.k)] || '';
     const dstr = fmtDate(dateAddedOf(r));
-    const subParts = [TYPE_LABELS[r.k], yr, (dstr!=='—'?dstr:'')].filter(Boolean).join(' · ');
+    const times = logCount(r.k, r.item);
+    const subParts = [TYPE_LABELS[r.k], yr, (dstr!=='—'?dstr:''), (times>1?times+'×':'')].filter(Boolean).join(' · ');
     const stars = quadSwatchHTML(quadOf(r.item, r.c.scale));
     return `<tr data-open="${r.k}:${r.item.id}">
       <td class="col-title"><div class="titlecell"><div class="swatch" style="${bgStyle(r.item)}"></div><div class="t"><span class="cell-title">${esc(r.item.name||'Untitled')}</span><span class="row-rate">${stars}</span><span class="row-sub">${subParts}</span></div></div></td>
       <td class="col-creator cell-creator">${esc(String(cr))}</td>
       <td class="col-type"><span class="typebadge">${TYPE_LABELS[r.k]}</span></td>
       <td class="col-year cell-year num">${esc(String(yr))}</td>
-      <td class="col-date cell-date">${dstr}</td>
+      <td class="col-date cell-date">${dstr}${times>1?` <span class="times">×${times}</span>`:''}</td>
       <td class="col-rating"><div class="ratecell">${stars}</div></td>
     </tr>`;
   }).join('') : `<tr><td colspan="6"><div class="empty"><b>Nothing here</b>Try a different filter or search.</div></td></tr>`;
@@ -2301,7 +2366,6 @@ const TM_MAXD = Math.sqrt(200*200 + 200*200); // opposite corners of the quadran
 const TM_MIN = 5;      // fewer shared works than this and the headline is noise
 const TM_DIVERGE = 85; // distance at which a pair counts as a real disagreement
 
-function tmNorm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
 function tmEntries(rows){
   const out = [];
   rows.forEach(r=>{
@@ -2309,7 +2373,7 @@ function tmEntries(rows){
     if(!q || q.x==null) return; // unrated, or legacy quality-only
     out.push({
       k:r.k, item:r.item, q,
-      nm:tmNorm(r.item.name), yr:itemYear(r.k, r.item),
+      nm:normName(r.item.name), yr:itemYear(r.k, r.item),
       src:r.item.srcId!=null ? String(r.item.srcId) : null
     });
   });
@@ -2317,20 +2381,17 @@ function tmEntries(rows){
 }
 function tmPush(m, key, e){ const a = m.get(key); if(a) a.push(e); else m.set(key,[e]); }
 function tmIndex(list){
-  const bySrc = new Map(), byNmYr = new Map(), byNm = new Map();
+  const bySrc = new Map(), byNmYr = new Map();
   list.forEach(e=>{
     if(e.src) tmPush(bySrc, e.k+'|'+e.src, e);
-    if(e.nm){
-      if(e.yr) tmPush(byNmYr, e.k+'|'+e.nm+'|'+e.yr, e);
-      tmPush(byNm, e.k+'|'+e.nm, e);
-    }
+    if(e.nm && e.yr) tmPush(byNmYr, e.k+'|'+e.nm+'|'+e.yr, e);
   });
-  return {bySrc, byNmYr, byNm};
+  return {bySrc, byNmYr};
 }
-/* Overlap: exact external id (extra.srcId) first, then kind + name + year, then
-   name alone as a last resort — but only when a year is missing on one side and
-   the name is unambiguous, otherwise a remake would happily match the original.
-   Each of their items can only pair once. */
+/* Overlap on the same two tiers as the duplicate check (`sameWork`): exact
+   external id (extra.srcId), then kind + name + year. Each of their items can
+   only pair once. Manual adds carry no srcId, which is what the second tier is
+   still there for. */
 function tmPair(A, B){
   const ix = tmIndex(B), used = new Set(), pairs = [];
   const free = c => (c||[]).filter(e=>!used.has(e));
@@ -2338,10 +2399,6 @@ function tmPair(A, B){
     let b = null;
     if(a.src) b = free(ix.bySrc.get(a.k+'|'+a.src))[0] || null;
     if(!b && a.nm && a.yr) b = free(ix.byNmYr.get(a.k+'|'+a.nm+'|'+a.yr))[0] || null;
-    if(!b && a.nm){
-      const c = free(ix.byNm.get(a.k+'|'+a.nm));
-      if(c.length===1 && !(a.yr && c[0].yr)) b = c[0];
-    }
     if(!b) return;
     used.add(b);
     pairs.push({a, b});
@@ -2633,6 +2690,7 @@ function openEdit(item){
   const c = COLLECTIONS[S.tab];
   S.editing = item ? {...item} : {id:null, rating:null, rx:null, ry:null, status:'completed'};
   S.typeLocked = false;
+  S.dupe = null;
   if(!S.editing.status) S.editing.status = 'completed';
   /* one-way conversion of an old rating: y from the score, x unknown */
   if(S.editing.ry==null && S.editing.rating!=null){
@@ -2681,9 +2739,102 @@ function renderAddManual(){
   setEditChrome('form');
   renderQuadPicker();
 }
+/* ---- already logged: the warning, and re-logging it as another sitting ----
+   Never a hard block. The match can be wrong (two books share a title, a remake
+   shares its original's year on a bad data day), so "add separately" always
+   stays available — just quietly, as the third option. */
+function showDupe(k, existing, picked, from){
+  S.dupe = {k, existing, picked, from};
+  const c = COLLECTIONS[k];
+  const n = logCount(k, existing);
+  const verb = LOG_VERB[k] || 'Logged';
+  const noun = REPEAT_NOUN[k] || 're-log';
+  const yr = itemYear(k, existing);
+  const status = existing.status || 'completed';
+  const times = n>1 ? ` — ${verb.toLowerCase()} <b>${n}×</b>` : '';
+  /* three different situations wear the same warning badly: something you
+     finished, something you're partway through, and something you gave up on */
+  const note = status==='inProgress'
+      ? `You're already ${ING[k]||'on'} this — it's in your Currently right now.`
+    : status==='dnf'
+      ? `You started this and didn't finish it${times}. Log another go at it?`
+      : `You've already logged this${times}. Would you like to log this as a ${noun}?`;
+  const relogBtn = `<button type="button" class="btn ${status==='inProgress'?'ghost':'primary'}" id="dupeRelog">Log a ${noun}</button>`;
+  const openBtn  = `<button type="button" class="btn ${status==='inProgress'?'primary':'ghost'}" id="dupeOpen">Open the entry I have</button>`;
+  S.addStep = 'dupe';
+  $('#editTitle').textContent = status==='inProgress' ? 'Already on the go' : 'Already logged';
+  $('#fields').innerHTML = `
+    <div class="add-preview">
+      ${existing.coverUrl?`<img class="add-preview-cover" src="${esc(existing.coverUrl)}" alt="">`:'<div class="add-preview-cover"></div>'}
+      <div class="add-preview-meta">
+        <div class="add-preview-title">${esc(existing.name||'')}</div>
+        <div class="add-preview-sub">${esc([TYPE_LABELS[k], existing[creatorField(k)], yr].filter(Boolean).join(' · '))}</div>
+      </div>
+    </div>
+    <p class="dupe-note">${note}</p>
+    <div class="acts col" style="margin-top:2px">
+      ${status==='inProgress' ? openBtn+relogBtn : relogBtn+openBtn}
+      <button type="button" class="btn quiet" id="dupeAnyway">Add as a separate entry</button>
+    </div>`;
+  updateCoverPreview('');
+  setEditChrome('search');
+}
+/* re-log = one more date on the same row. The rating is the work's, not the
+   sitting's, so it isn't asked for again — edit the item to change it. */
+function renderRelog(){
+  const {k, existing} = S.dupe;
+  const dateF = dateFieldOf(k);
+  const dateLbl = {dateWatched:'Date watched', datePlayed:'Date played', dateRead:'Date read'}[dateF] || 'Date';
+  const prev = logsOf(k, existing);
+  S.addStep = 'relog';
+  $('#editTitle').textContent = (REPEAT_NOUN[k]||'Re-log').replace(/^./,ch=>ch.toUpperCase());
+  $('#fields').innerHTML = `
+    <div class="add-preview">
+      ${existing.coverUrl?`<img class="add-preview-cover" src="${esc(existing.coverUrl)}" alt="">`:'<div class="add-preview-cover"></div>'}
+      <div class="add-preview-meta">
+        <div class="add-preview-title">${esc(existing.name||'')}</div>
+        <div class="add-preview-sub">${esc(TYPE_LABELS[k])}${prev.length?` · ${LOG_VERB[k]||'Logged'} ${prev.length}× already`:''}</div>
+      </div>
+    </div>
+    ${prev.length?`<div class="dupe-dates">${prev.map(d=>`<span>${esc(fmtDate(d))}</span>`).join('')}</div>`:''}
+    <label class="f"><span>${dateLbl}</span><input class="in" type="date" id="relogDate" value="${esc(todayISO())}"></label>
+    <div class="acts" style="margin-top:2px">
+      <button type="button" class="btn primary" id="relogSave">Log it</button>
+      <button type="button" class="btn ghost" id="relogBack">&larr; Back</button>
+    </div>`;
+  setEditChrome('search');
+}
+function todayISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+async function saveRelog(){
+  const {k, existing} = S.dupe;
+  const date = ($('#relogDate')||{}).value || todayISO();
+  const logs = logsOf(k, existing).concat(date).sort();
+  const dateF = dateFieldOf(k);
+  /* date_logged tracks the latest sitting, so a re-watch surfaces in
+     "Recently added" the way a fresh log would */
+  const o = {...existing, logs, [dateF]: logs[logs.length-1]};
+  try{
+    const res = await supa.from('items').update(itemToRow(k, o)).eq('id', existing.id).select().single();
+    if(res.error) throw res.error;
+    const it = rowToItem(res.data);
+    const arr = S.data[k].items;
+    const ix = arr.findIndex(x=>x.id===it.id);
+    if(ix>=0) arr[ix] = it;
+    S.dupe = null;
+    closeSheets(); render();
+    toast(`${LOG_VERB[k]||'Logged'} ${logs.length}×`);
+  }catch(err){ toast('Save failed: '+err.message); }
+}
 /* ---- add step 2: locked-in metadata + rating & date ---- */
-async function openAddDetail(picked){
+async function openAddDetail(picked, force){
   const k = S.tab, e = S.editing;
+  if(!force && !e.id){
+    const dup = findExisting(k, {srcId:picked.id, name:picked.title, year:picked.year});
+    if(dup){ showDupe(k, dup, picked, 'pick'); return; }
+  }
   S.addStep = 'detail';
   if(!e.id) $('#editTitle').textContent = 'Add '+COLLECTIONS[k].label.toLowerCase().replace(/s$/,'');
   const crK = creatorField(k), yrK = yearField(k);
@@ -2767,10 +2918,17 @@ function readEdit(){
   o.inProgress = o.status==='inProgress';
   return o;
 }
-async function saveEdit(){
-  const o = readEdit();
+async function saveEdit(force){
+  /* on "add anyway" the form is already gone (the warning replaced it), so the
+     draft captured before the swap is what gets saved */
+  const o = (force && S.dupe && S.dupe.draft) ? S.dupe.draft : readEdit();
   if(!o.name){ toast('A title is required'); return; }
   if(!S.session){ toast('Sign in to save'); openAuth(); return; }
+  if(!o.id && !force){
+    const dup = findExisting(S.tab, {srcId:o.srcId, name:o.name, year:itemYear(S.tab, o)});
+    if(dup){ showDupe(S.tab, dup, null, 'save'); S.dupe.draft = o; return; }
+  }
+  S.dupe = null;
   const row = itemToRow(S.tab, o);
   try{
     const res = o.id
@@ -2842,11 +3000,22 @@ function openItemPage(k, item, own){
     : 'Not rated yet';
   /* metadata list: every field with a value, minus the ones already in the hero */
   const skip = new Set(['name','coverUrl', creatorField(k), yearField(k)]);
-  const rows = c.fields.filter(f=>!skip.has(f.k) && item[f.k]!=null && item[f.k]!=='')
+  let rows = c.fields.filter(f=>!skip.has(f.k) && item[f.k]!=null && item[f.k]!=='')
     .map(f=>{
       const v = f.t==='date' ? fmtDate(item[f.k]) : esc(String(item[f.k]));
       return `<div class="ip-row"><span class="ip-k">${f.l}</span><span class="ip-v">${v}</span></div>`;
     }).join('');
+  /* every sitting, once there's more than one — the single-date field above
+     only ever shows the latest */
+  const times = logCount(k, item);
+  if(times>1){
+    /* each sitting is removable on your own items — logged the same thing twice
+       by accident and there'd otherwise be no way back short of editing rows */
+    const chips = logsOf(k, item).map((d,i)=>`<span class="ip-log">${esc(fmtDate(d))}${
+      own?`<button type="button" class="ip-logx" data-dellog="${i}" aria-label="Remove ${esc(fmtDate(d))}" title="Remove this ${REPEAT_NOUN[k]||'log'}">×</button>`:''
+    }</span>`).join('');
+    rows += `<div class="ip-row"><span class="ip-k">Every time</span><span class="ip-v ip-logs">${chips}</span></div>`;
+  }
   const descHTML = item.desc
     ? `<p class="ip-desc" id="ipDesc">${esc(item.desc)}</p>`
     : `<p class="ip-desc pending" id="ipDesc">Fetching description…</p>`;
@@ -2861,6 +3030,7 @@ function openItemPage(k, item, own){
           ${quadSwatchHTML(q)}
           <span class="ip-rateval">${rateLine}</span>
           ${status!=='completed'?`<span class="ip-status ${status}">${STATUS_LABELS[status]||''}</span>`:''}
+          ${times>1?`<span class="ip-times">${LOG_VERB[k]||'Logged'} ${times}×</span>`:''}
         </div>
       </div>
     </div>
@@ -2870,6 +3040,34 @@ function openItemPage(k, item, own){
   act.textContent = own ? 'Edit' : 'Add to my list';
   openSheet('#itemSheet');
   if(!item.desc) loadDescription(k, item, own);
+}
+/* drop one sitting from a work's history. Down to a single log the array goes
+   away entirely, so the row returns to exactly the shape it had before it was
+   ever re-logged; date_logged falls back to whatever is now the latest. */
+async function removeLog(i){
+  const v = S.viewingItem;
+  if(!v || !v.own || !S.session) return;
+  const {k, item} = v;
+  const logs = logsOf(k, item);
+  if(i<0 || i>=logs.length) return;
+  const gone = logs[i];
+  const left = logs.length-1;
+  if(!confirm(`Remove the ${fmtDate(gone)} ${REPEAT_NOUN[k]||'log'} of "${item.name}"?`
+    + (left>1 ? ` It'll show ${left}× instead of ${logs.length}×.` : ` It'll go back to a single ${(LOG_VERB[k]||'log').toLowerCase()} date.`))) return;
+  logs.splice(i,1);
+  const dateF = dateFieldOf(k);
+  const o = {...item, logs: logs.length>1 ? logs : null, [dateF]: logs.length ? logs[logs.length-1] : null};
+  try{
+    const res = await supa.from('items').update(itemToRow(k, o)).eq('id', item.id).select().single();
+    if(res.error) throw res.error;
+    const it = rowToItem(res.data);
+    const arr = S.data[k].items;
+    const ix = arr.findIndex(x=>x.id===it.id);
+    if(ix>=0) arr[ix] = it;
+    render();
+    openItemPage(k, it, true);   // stay on the item, now one sitting lighter
+    toast(left>1 ? `${LOG_VERB[k]||'Logged'} ${left}×` : 'Back to one');
+  }catch(err){ toast('Update failed: '+err.message); }
 }
 /* pull a synopsis from the source APIs for items that don't have one stored;
    caches it on the item and (for your own items) persists it quietly. */
@@ -2918,6 +3116,10 @@ function addFromViewed(){
   const dateF = (COLLECTIONS[v.k].recentFields||[])[0]; if(dateF) copy[dateF]=null;
   Object.assign(S.editing, copy);
   S.typeLocked = true;   // the kind came from the item being copied
+  /* copying someone else's item is the likeliest way to end up with two of
+     something, so it gets the same check as the search */
+  const dup = findExisting(v.k, {srcId:copy.srcId, name:copy.name, year:itemYear(v.k, copy)});
+  if(dup){ showDupe(v.k, dup, null, 'viewed'); return; }
   renderAddManual();
 }
 async function logFinished(k, id){
@@ -3032,12 +3234,16 @@ $('#typePick').addEventListener('click', e=>{
 $('#settingsBtn').addEventListener('click', openSet);
 $('#scrim').addEventListener('click', closeSheets);
 $('#cancelEdit').addEventListener('click', closeSheets);
-$('#saveEdit').addEventListener('click', saveEdit);
+$('#saveEdit').addEventListener('click', ()=>saveEdit());   // never hand it the click event as `force`
 $('#delEdit').addEventListener('click', delEdit);
 $('#closeSet').addEventListener('click', closeSheets);
 $('#pfCancel').addEventListener('click', closeSheets);
 $('#pfSave').addEventListener('click', saveProfileEdit);
 $('#itemClose').addEventListener('click', closeSheets);
+$('#itemBody').addEventListener('click', e=>{
+  const x = e.target.closest('[data-dellog]');
+  if(x){ e.stopPropagation(); removeLog(+x.dataset.dellog); }
+});
 $('#cmpClose').addEventListener('click', closeSheets);
 /* "only divergent" dims the plot in place — no re-render, so hover survives */
 $('#cmpSheet').addEventListener('click', e=>{
@@ -3522,6 +3728,20 @@ $('#fields').addEventListener('click', e=>{
   if(e.target.closest('#manualAddBtn')){ renderAddManual(); return; }
   if(e.target.closest('#backToSearch')){ renderAddSearch(); return; }
   if(e.target.closest('#editFieldsBtn')){ renderAddManual(); return; }
+  if(e.target.closest('#dupeRelog')){ renderRelog(); return; }
+  if(e.target.closest('#dupeOpen')){
+    const d = S.dupe; S.dupe = null;
+    closeSheets(); openItemPage(d.k, d.existing, true); return;
+  }
+  if(e.target.closest('#dupeAnyway')){
+    const d = S.dupe; if(!d) return;
+    if(d.from==='pick') openAddDetail(d.picked, true);
+    else if(d.from==='save') saveEdit(true);
+    else { S.dupe = null; renderAddManual(); }
+    return;
+  }
+  if(e.target.closest('#relogSave')){ saveRelog(); return; }
+  if(e.target.closest('#relogBack')){ showDupe(S.dupe.k, S.dupe.existing, S.dupe.picked, S.dupe.from); return; }
   const row = e.target.closest('[data-sid]'); if(!row) return;
   e.preventDefault();
   const picked = lastSuggestResults.find(r=>r.kind+':'+r.id===row.dataset.sid);
@@ -3596,18 +3816,26 @@ async function loadFromSupa(){
 /* one-time migration of the old repo JSON files into this account */
 async function importLocalJson(){
   if(!S.session) return;
-  if(!confirm('Import films/games/tv/books JSON from the repo into your account? Running this twice creates duplicates.')) return;
+  if(!confirm('Import films/games/tv/books JSON from the repo into your account? Anything you already have is skipped.')) return;
   const btn = $('#importJsonBtn'); btn.textContent='Importing…'; btn.disabled=true;
   try{
-    let total = 0;
+    let total = 0, skipped = 0;
     for(const k of Object.keys(COLLECTIONS)){
       let j; try{ j = await loadLocal(k); }catch(e){ continue; }
       const sc = COLLECTIONS[k].scale;
-      const rows = (j.items||[]).map(it=>{
+      const rows = [], batchKeys = [];
+      (j.items||[]).forEach(it=>{
         const o = {...it};
         if(o.ry==null && o.rating!=null){ o.ry = Math.round((o.rating/sc)*200-100); o.rx = null; }
         delete o.id;
-        return itemToRow(k, o);
+        /* against the library *and* against this run, so a file with its own
+           duplicates can't sneak them in either */
+        const keys = workKeys(k, o.name, itemYear(k, o), o.srcId);
+        if(findExisting(k, {srcId:o.srcId, name:o.name, year:itemYear(k, o)}) || batchKeys.some(b=>sameWork(keys, b))){
+          skipped++; return;
+        }
+        batchKeys.push(keys);
+        rows.push(itemToRow(k, o));
       });
       for(let i=0;i<rows.length;i+=200){
         const r = await supa.from('items').insert(rows.slice(i,i+200));
@@ -3615,7 +3843,7 @@ async function importLocalJson(){
       }
       total += rows.length;
     }
-    toast('Imported '+total+' items');
+    toast('Imported '+total+' items'+(skipped?` · skipped ${skipped} already logged`:''));
     await loadFromSupa();
   }catch(err){ toast('Import failed: '+err.message); }
   btn.textContent='Import old JSON lists'; btn.disabled=false;
