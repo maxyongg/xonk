@@ -317,8 +317,15 @@ nav.nav{display:flex;align-items:center;gap:18px;flex:0 0 auto}
      row's free space and shove the column apart */
   .hero-stage{margin:0}
   .hero-side{width:340px}
+  .hero-read{margin:0 0 16px;max-width:none}
   .hero-acts .acts{margin-top:0}
 }
+/* the readout has no pre-live copy — it fades in at LIVE already showing a
+   rating, so it never captions a graph that is still a dot on the wordmark.
+   The 22px chip holds the row's height from the start, so nothing shifts. */
+.hero-read{display:flex;align-items:center;gap:10px;margin:10px auto 0;max-width:300px;opacity:0}
+.hero-chip{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.15);background:var(--ink-3)}
+.hero-readout{flex:1;font-family:var(--font-body);font-size:12px;color:var(--ink);line-height:1.4}
 .hero-acts{opacity:0}
 /* pill buttons, tighter than the app's .btn — scoped so the rest of the app
    keeps its own. 44px measured height is the mobile hit-target floor: don't
@@ -1012,7 +1019,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.26h</div>
+<div class="version" id="verStamp">xonk v2026.07.26i</div>
 
 <script>
 /* ================= config ================= */
@@ -2686,6 +2693,10 @@ function renderWelcome(){
         <div class="hero-pick" id="heroPick"></div>
       </div>
       <div class="hero-side">
+        <div class="hero-read" id="heroRead">
+          <span class="hero-chip" id="heroChip"></span>
+          <span class="hero-readout" id="heroReadout"></span>
+        </div>
         <div class="hero-acts" id="heroActs">
           <div class="acts">
             <button class="btn ghost" id="welcomeUp">Create account</button>
@@ -2704,10 +2715,10 @@ function renderWelcome(){
    The `o` in the wordmark is already the four-quadrant logo, so the reveal
    lifts it out of the word and grows it into the real rating field: logo
    crossfades to the painted canvas, axes and a handful of demo titles land on
-   it, then it goes live — drag anywhere and the marker and the Sign in button
-   take that rating's colour. Colour maths is the app's own (quadColorRGB /
-   quadColor / paintQuadCanvas) so the hero can never drift from the picker it
-   is advertising. */
+   it, then it goes live — drag anywhere and the marker, the readout and the
+   Sign in button take that rating's colour. Colour maths is the app's own
+   (quadColorRGB / quadColor / paintQuadCanvas / fmtSigned) so the hero can
+   never drift from the picker it is advertising. */
 const HERO_T = { LIFT0:700, LIFT1:1650, FADE:1000, AXES:1500, ANCH:1850, CLOUD:2650, ACTS:4050, LIVE:4300 };
 /* five demo-account rows, spread across the quadrants and the four kinds.
    `short` is used under 360px, where the full plate can't fit beside its dot. */
@@ -2875,7 +2886,8 @@ function initWelcomeHero(){
   const stage = $('#heroStage'), brandO = $('#heroBrandO'), cv = $('#heroField');
   const logo = $('#heroLogo'), axes = $('#heroAxes');
   const dotsEl = $('#heroDots'), anchEl = $('#heroAnchors');
-  const acts = $('#heroActs');
+  const acts = $('#heroActs'), read = $('#heroRead');
+  const chip = $('#heroChip'), readout = $('#heroReadout');
   const pick = $('#heroPick'), rip = $('#heroRipple'), cta = $('#welcomeIn');
   if(!stage) return;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2982,9 +2994,13 @@ function initWelcomeHero(){
     }
 
     if(live){
+      const rgb = quadColorRGB(cur.x, cur.y);
+      read.style.opacity = String(hClamp01((t-HERO_T.LIVE)/400));
+      chip.style.background = hCssRGB(rgb);
+      readout.textContent = `Enjoyment ${fmtSigned(cur.x)} · Quality ${fmtSigned(cur.y)}`;
       /* background and ink must land on the same frame — transitioning colour
          on its own drags the label through unreadable mid-greys (1.15:1) */
-      const on = hCtaTint(quadColorRGB(cur.x, cur.y));
+      const on = hCtaTint(rgb);
       cta.style.background = on.bg; cta.style.color = on.ink; cta.style.borderColor = on.edge;
     }
   }
