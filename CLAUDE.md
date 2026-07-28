@@ -14,6 +14,13 @@ deploys immediately.**
 - **Max is signed in on the test browser → the app loads his real ~900-item account.
   Treat all writes as real data.**
 - Bump the version stamp (`id="verStamp">xonk v(YYYY.MM.DD)(letter)`) on every change.
+- **"Deploys immediately" does not mean the tester sees it.** An open tab never
+  re-fetches `index.html` — the app keeps running the build it loaded, through any
+  amount of clicking — and Pages puts a ~10 min cache on the file, so even a soft reload
+  can hand back the previous build. **Before believing a bug report from a live test,
+  confirm which build was running** (read `#verStamp`, or check a function you just
+  added). Two rounds were once spent debugging a fix that was live on the server and
+  absent from the tester's tab. Fix is Ctrl+Shift+R, then check the stamp.
 - **Land new SQL in the Supabase dashboard *before* pushing JS that calls it** — nothing
   applies `supabase-schema.sql` automatically and `main` deploys instantly.
 - After JS edits, syntax-check the inline script. `node`/`python` are often **not on

@@ -186,9 +186,12 @@ user needs it at onboarding, and nobody finds the version stamp unprompted. One
   every row. The chip stays 15px; a `::after` inset makes the tap target ~33px. The
   Letterboxd one lists the three files against what each brings, as `.tip-f` rows whose
   inner `<b>` must re-declare `display:inline` to beat `.tip-pop b`'s block rule.
-- **The done step pushes straight into the rate backlog** (`#impRate` → `openRateQueue`),
-  labelled with the live count. Landing ~900 unrated rows and then leaving the user to
-  find the backlog on their own is how an import turns into a chore.
+- **The done step hands off to both follow-ups, matching first.** `#impMatch` is the
+  headline instruction (a CSV is titles and stars only, and the id decides whether
+  compare can pair you with anyone), then `#impRate` → `openRateQueue` labelled with the
+  live count. Both also live in Settings. Landing ~900 rows with no covers and no
+  ratings, and leaving the user to discover the two clean-up passes themselves, is how
+  an import turns into a chore — that is exactly what the first real import did.
 
 ## Compare
 

@@ -41,6 +41,15 @@ In `supabase/functions/`, deployed via the dashboard (not by any script here).
   one per keyed source.
 - `demo-data` — public, serves the welcome screen's demo account.
 
+**The import's match pass is the heaviest caller.** `impMatchRun` walks every row with
+no `extra.srcId` and spends one search per row, plus a second `detail` call for a film
+whose director is missing — so a freshly imported 900-film library is on the order of
+1,800 invocations in one run. It is deliberately serial with a 220 ms gap (~7 minutes
+for that library) and stoppable/resumable, which is what keeps it off any rate limit.
+Don't parallelise it without checking TMDB's limits first. Books skip the search
+entirely when a Goodreads ISBN is present — `openlibrary.org/isbn/<isbn>.json` is
+called direct from the browser, keyless and exact.
+
 ## Legacy / dead files
 
 - `films.json`, `tv.json`, `games.json`, `books.json`, `albums.json` — a frozen

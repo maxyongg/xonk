@@ -2,9 +2,10 @@
 
 Live: profile "You" page, People directory, quadrant rating, per-item status,
 item pages (1), 1-to-1 compare (2), one-search-all-sources adding, one row per
-work (re-log instead of duplicating), an animated pre-auth landing that teaches
-the two-axis gesture. Find-community (3) is the remaining **main** feature,
-still being refined. Section numbers are referenced from
+work (re-log instead of duplicating), Letterboxd/Goodreads CSV import with its
+source-match and rate-backlog follow-ups, an animated pre-auth landing that
+teaches the two-axis gesture. Find-community (3) is the remaining **main**
+feature, still being refined. Section numbers are referenced from
 CLAUDE.md and code comments — don't renumber.
 
 **thelist** — a user's logged library. **significant similarity** — still to pin
