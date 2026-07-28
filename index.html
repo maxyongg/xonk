@@ -999,6 +999,9 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
     <button class="btn ghost" id="setImportBtn">Import from Letterboxd or Goodreads</button>
   </div>
   <div class="acts" style="margin-top:2px">
+    <button class="btn ghost" id="setMatchBtn">Match sources</button>
+  </div>
+  <div class="acts" style="margin-top:2px">
     <button class="btn primary" id="setRateQueue">Rate backlog</button>
   </div>
   <div class="acts">
@@ -1062,9 +1065,6 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   <div class="acts" style="margin-top:2px">
     <button class="btn ghost" id="fetchCoversBtn">Fetch missing covers</button>
   </div>
-  <div class="acts" style="margin-top:2px">
-    <button class="btn ghost" id="devMatchBtn">Match unlinked items to sources</button>
-  </div>
   <div class="acts">
     <button class="btn ghost" id="devClose">Close</button>
   </div>
@@ -1081,7 +1081,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.28d</div>
+<div class="version" id="verStamp">xonk v2026.07.28e</div>
 
 <script>
 /* ================= config ================= */
@@ -3450,9 +3450,20 @@ function labelRateQueue(sel){
   b.disabled = !n;
   return n;
 }
+/* same treatment for matching: how many rows still have no source id, so the
+   post-import chore is visible from Settings instead of being remembered */
+function labelMatchBtn(sel){
+  const b = $(sel); if(!b) return 0;
+  if(b.dataset.running==='1') return 0;      // mid-run the label is the progress
+  const n = S.session ? impMatchable().length : 0;
+  b.textContent = n ? `Match sources (${n})` : 'Match sources — all linked';
+  b.disabled = !n;
+  return n;
+}
 function openSet(){
   renderAcct();
   labelRateQueue('#setRateQueue');
+  labelMatchBtn('#setMatchBtn');
   openSheet('#setSheet');
 }
 
@@ -4674,7 +4685,12 @@ async function impMatchRun(btn){
     if(p) p.textContent = `${matched} matched, ${queue.length-done} still to check`;
     await new Promise(r=>setTimeout(r, 220));   // the search proxy is shared; don't hammer it
   }
-  if(btn){ btn.dataset.running = '0'; btn.textContent = label; }
+  if(btn){
+    btn.dataset.running = '0';
+    /* the Settings button's label carries a count, so restoring the text it had
+       when the run started would show the pre-run number */
+    if(btn.id==='setMatchBtn') labelMatchBtn('#setMatchBtn'); else btn.textContent = label;
+  }
   render();
   toast(`${matched} matched to a source${impMatchStop ? ' — stopped' : ''}`);
 }
@@ -4759,11 +4775,14 @@ function impRender(){
         ${impLi(r.skipped, 'Already yours, left alone', '')}
         ${r.failed ? impLi(r.failed, 'Failed', r.lastErr) : ''}
       </ul>
-      <p class="note">What you brought in has a quality but <b>no enjoyment yet</b>. The rate backlog walks the lot one gesture at a time, keeping each imported star as the quality — it's the fastest way to make this library yours. It's in Settings whenever you want to come back to it.</p>
-      <p class="imp-prog" id="impProg">A CSV carries no covers, directors or source ids. Matching fills them in — and the source id is what lets compare pair your films with someone else's.</p>
-      ${backlog ? `<div class="acts"><button type="button" class="btn primary" id="impRate">Rate the backlog (${backlog})</button></div>` : ''}
-      <div class="acts"${backlog?' style="margin-top:10px"':''}>
-        <button type="button" class="btn ghost" id="impMatch">Match to sources</button>
+      <p class="note ok"><b>Do this next — match to sources.</b> A CSV carries no covers, no directors and no source ids, so what you just imported is titles and stars only. Matching looks each one up and fills the rest in. The source id also decides whether compare can pair your films with someone else's, so it's worth doing now rather than remembering later.</p>
+      <p class="note"><b>Then rate.</b> Everything imported has a quality but no enjoyment yet, and the backlog walks the lot one gesture at a time — keeping each star as the quality. Both of these sit in <b>Settings</b> whenever you want to come back to them.</p>
+      <p class="imp-prog" id="impProg">Not matched yet — covers and directors are still missing.</p>
+      <div class="acts">
+        <button type="button" class="btn primary" id="impMatch">Match to sources</button>
+      </div>
+      ${backlog ? `<div class="acts" style="margin-top:10px"><button type="button" class="btn primary" id="impRate">Rate the backlog (${backlog})</button></div>` : ''}
+      <div class="acts" style="margin-top:10px">
         <button type="button" class="btn ghost" id="impClose">Close</button>
       </div>`;
     return;
@@ -4815,7 +4834,7 @@ function impRender(){
     </div>`;
 }
 $('#setImportBtn').addEventListener('click', impOpen);
-$('#devMatchBtn').addEventListener('click', e=>impMatchRun(e.currentTarget));
+$('#setMatchBtn').addEventListener('click', e=>impMatchRun(e.currentTarget));
 $('#impBody').addEventListener('change', e=>{ if(e.target.id==='impFile') impRead(e.target.files); });
 $('#impBody').addEventListener('click', e=>{
   /* any click that isn't the trigger itself dismisses an open tooltip */

@@ -171,8 +171,8 @@ user needs it at onboarding, and nobody finds the version stamp unprompted. One
 - `ratings.csv` outranks a diary star — it's your verdict now, not what you thought
   that night. A diary star only fills in when it's the only one there is, latest first.
 - **A CSV carries no source id**, which is the one tier `sameWork` matches exactly.
-  `impMatchRun` (offered on the done step, and in the dev menu as "Match unlinked items
-  to sources") walks every row missing `srcId`, and accepts a hit **only** on an exact
+  `impMatchRun` (Settings → "Match sources", and the done step's first instruction)
+  walks every row missing `srcId`, and accepts a hit **only** on an exact
   normalised title with the year within one. Loosen that and you manufacture agreement
   in compare, which is worse than no id. A Goodreads ISBN skips the guessing entirely.
   It's rate-limited, resumable and stoppable — a second tap on the button stops it.
@@ -210,10 +210,13 @@ Most modals dismiss from a `Close` in their button row. Auth can't — its row i
 toggle plus the submit — so it carries a top-right `.modal-x` instead, styled to match
 the rate queue's `.rq-x`.
 
-Settings holds account state **plus the CSV import and the rate backlog** — both are
-everyday user surfaces rather than account state, and the dev menu is unfindable by
-anyone who wasn't told about the version stamp. `openSet` calls `labelRateQueue`, so
-the button answers "how much is left to rate?" without opening anything, and disables
-itself at zero. Appearance opens from its own header button (`#themeBtn`), not from
-Settings. What's left in the dev menu is genuine maintenance: the needs-rating filter,
-"Fetch missing covers" and "Match unlinked items to sources".
+Settings holds account state **plus the three things an import leaves you owing**:
+Import, "Match sources", and the rate backlog. None of them is account state, but all
+three are everyday user surfaces, and the dev menu is unfindable by anyone who wasn't
+told about the version stamp. `openSet` calls `labelRateQueue` and `labelMatchBtn`, so
+both buttons answer "how much is left?" without opening anything and disable themselves
+at zero — which is also how you check an import finished its follow-up work. (Note
+`impMatchRun` rewrites its button's label as progress, so it re-derives the count on
+finish rather than restoring the text it captured at the start.) Appearance opens from
+its own header button (`#themeBtn`), not from Settings. What's left in the dev menu is
+genuine maintenance: the needs-rating filter and "Fetch missing covers".
