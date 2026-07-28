@@ -32,7 +32,7 @@ relevant one tends to re-break something that was already fixed.
 | You are about to touch | Read first |
 | --- | --- |
 | item fields, ratings, `extra`, re-logs, `rowToItem`/`itemToRow`, whether two entries are the same work | `docs/data-model.md` |
-| adding/search, duplicates, re-logs, Currently cards, compare's wiring, the pre-auth landing, sheet vs. centred modal | `docs/ui-flows.md` |
+| adding/search, duplicates, re-logs, Currently cards, compare's wiring, the CSV import, the pre-auth landing, sheet vs. centred modal | `docs/ui-flows.md` |
 | Supabase, SQL, auth, RLS, People/profile loading, edge functions, the JSON files | `docs/backend.md` |
 | scoring formulas, why a feature is shaped the way it is, what's next, §1–§3 | `ROADMAP.md` |
 

@@ -1,8 +1,8 @@
 # UI flows
 
 *Read before touching the add/search flow, the duplicate warning, re-logging or log
-deletion, Currently cards, the compare modal's wiring, the pre-auth welcome screen, or
-any dialog's sheet-vs-modal presentation. Siblings: `data-model.md`
+deletion, Currently cards, the compare modal's wiring, the CSV import, the pre-auth
+welcome screen, or any dialog's sheet-vs-modal presentation. Siblings: `data-model.md`
 (what these flows write), `backend.md` (where it goes), `ROADMAP.md` (scoring, what's
 next). Keep this current — it is how the next session learns any of it.*
 
@@ -117,6 +117,67 @@ Clicking the peeking back card cycles the stack (`cycleCurrent(k)`, top index in
 Known gap: finishing a card (✓) clears `in_progress` but does **not** append a log — see
 ROADMAP, Lower priority.
 
+## Import (Letterboxd / Goodreads CSV)
+
+Opens from **Settings** (`#setImportBtn` → `impOpen`), not the dev menu: every beta
+user needs it at onboarding, and nobody finds the version stamp unprompted. One
+`.modal.wide` whose body is swapped per step — `impRender` draws pick → preview → run
+→ done off `S.imp.step`.
+
+- **The star becomes quality, never enjoyment.** `impStarsToY` maps both services onto
+  `quadOf`'s legacy curve (`y = rating/scale*200-100`); Letterboxd's 0.5–5 halves and
+  Goodreads' 1–5 wholes both collapse to `stars*40-100`. `rx` stays null, so the row
+  draws as a hollow ring, reads as rated, and `needsRating` still returns true — imported
+  titles land in the rate backlog, where lockY ("keep this quality, place the enjoyment")
+  is already the right gesture. **Don't be tempted to fill `rx` in** — a diagonal
+  `rx = ry` would feed compare ~900 opinions the user never expressed.
+- **An import can only add.** `impPlan` sorts every candidate into add / update / leave
+  alone *before* anything is written, and the preview shows those counts. An update may
+  contribute unseen dates to `logs` and a quality to a row with **no** rating at all
+  (`ry==null && rx==null`); it never touches a title, a date already held, or a rating
+  given by hand.
+- **Three Letterboxd files are read**: `watched.csv` (everything seen), `ratings.csv`
+  (the star), `diary.csv` (the dates, so re-watches count). `reviews.csv` identifies as
+  a diary too — same columns plus `Review` — and its rows duplicate diary ones, which
+  the log dedupe absorbs. Any subset works; `watchlist.csv` is the only one refused,
+  and it's still *identified* so the preview can name it and say why (`IMP_UNUSED`) —
+  a silent drop reads as the import having lost your data.
+- **`watched.csv` and `watchlist.csv` have identical headers.** `impIdentify` reads the
+  header first (people rename downloads) but has to fall back to the filename for those
+  two — a watchlist imported as history is exactly the wrong outcome. Goodreads'
+  `to-read` shelf is dropped for the same reason.
+- **Which file a date comes from decides what it means, and this is load-bearing.**
+  `Watched Date` (diary only) is a real viewing → `logs`. The `Date` column present on
+  *every* file is when the entry was created on Letterboxd → `fallback`, never `logs`:
+  good enough to date a film arriving fresh, nowhere near good enough to assert a
+  re-watch on a film you already own. Collapse that split and every `watched.csv` row
+  starts manufacturing a second sitting on films you already have. Goodreads' `Date
+  Read` is a real date and merges; its `Date Added` is a fallback.
+- **The merge key is kind + normalised name + year, not the Letterboxd URI.** In
+  `diary.csv` the URI identifies the *entry*, not the film, so keying on it would give
+  one row per sitting.
+- `ratings.csv` outranks a diary star — it's your verdict now, not what you thought
+  that night. A diary star only fills in when it's the only one there is, latest first.
+- **A CSV carries no source id**, which is the one tier `sameWork` matches exactly.
+  `impMatchRun` (offered on the done step, and in the dev menu as "Match unlinked items
+  to sources") walks every row missing `srcId`, and accepts a hit **only** on an exact
+  normalised title with the year within one. Loosen that and you manufacture agreement
+  in compare, which is worse than no id. A Goodreads ISBN skips the guessing entirely.
+  It's rate-limited, resumable and stoppable — a second tap on the button stops it.
+- Goodreads' `Read Count` can say 3 while the export carries one `Date Read`. The other
+  sittings aren't invented, so an imported re-read shows as one log. Letterboxd
+  re-watches *do* come through, because diary.csv dates each one.
+- **The tooltips are tap-toggled, not hover** (`impTip` → `.tip` / `.tip-pop`): the
+  export steps are exactly what a phone user needs and phones have no hover. The
+  popover is positioned against the whole `<li>`, not the 15px trigger — anchored to
+  the trigger it hangs off the panel, since the trigger ends a different-length line in
+  every row. The chip stays 15px; a `::after` inset makes the tap target ~33px. The
+  Letterboxd one lists the three files against what each brings, as `.tip-f` rows whose
+  inner `<b>` must re-declare `display:inline` to beat `.tip-pop b`'s block rule.
+- **The done step pushes straight into the rate backlog** (`#impRate` → `openRateQueue`),
+  labelled with the live count. Landing ~900 unrated rows and then leaving the user to
+  find the backlog on their own is how an import turns into a chore.
+
 ## Compare
 
 `tm*` functions: `tmEntries` / `tmIndex` prepare each side, `tmPair` pairs shared works
@@ -137,7 +198,10 @@ Most modals dismiss from a `Close` in their button row. Auth can't — its row i
 toggle plus the submit — so it carries a top-right `.modal-x` instead, styled to match
 the rate queue's `.rq-x`.
 
-Settings holds account state only. Appearance opens from its own header button
-(`#themeBtn`), not from Settings, and one-time maintenance tools live in the dev menu
-behind the version stamp — currently the needs-rating filter, the rate backlog, and
-"Fetch missing covers".
+Settings holds account state **plus the CSV import and the rate backlog** — both are
+everyday user surfaces rather than account state, and the dev menu is unfindable by
+anyone who wasn't told about the version stamp. `openSet` calls `labelRateQueue`, so
+the button answers "how much is left to rate?" without opening anything, and disables
+itself at zero. Appearance opens from its own header button (`#themeBtn`), not from
+Settings. What's left in the dev menu is genuine maintenance: the needs-rating filter,
+"Fetch missing covers" and "Match unlinked items to sources".

@@ -854,6 +854,52 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 .note b{color:var(--ink)}
 .note.warn{color:var(--sig);border-color:var(--sig)}
 .note.ok{color:var(--acid);border-color:var(--acid)}
+/* ---- import (letterboxd / goodreads csv) ---- */
+.imp-how{margin:0 0 14px;padding-left:18px;font-family:var(--font-body);font-size:11.5px;
+  color:var(--mute);line-height:1.75}
+.imp-how b{color:var(--ink)}
+.imp-how code{font-family:var(--font-body);background:var(--ink-3);border-radius:4px;padding:1px 5px;font-size:11px}
+.imp-file{display:block;border:1px dashed var(--line);border-radius:var(--r);padding:26px 16px;
+  text-align:center;cursor:pointer;background:var(--ink-2);
+  font-family:var(--font-body);font-size:13px;color:var(--mute);margin-bottom:14px}
+.imp-file:hover,.imp-file.over{border-color:var(--ink);color:var(--ink);background:var(--ink-3)}
+.imp-file b{display:block;color:var(--ink);font-weight:600;font-size:14px;margin-bottom:4px}
+.imp-file input{display:none}
+.imp-sum{list-style:none;margin:0 0 14px;padding:0;font-family:var(--font-body);font-size:12.5px}
+.imp-sum li{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  padding:10px 0;border-bottom:1px solid var(--line)}
+.imp-sum li:last-child{border-bottom:none}
+.imp-sum .imp-n{font-family:var(--font-head);font-size:16px;font-weight:700;flex:0 0 auto}
+.imp-sum .imp-sub{color:var(--mute);font-size:11px}
+.imp-sum .imp-zero{color:var(--mute)}
+.imp-prog{font-family:var(--font-body);font-size:12px;color:var(--mute);text-align:center;margin:0 0 14px}
+/* tap-toggled tooltip — the export steps, where the file names are named.
+   The popover is positioned against the whole bullet, not the 15px trigger:
+   anchored to the trigger it hangs off the panel whenever the line it ends is
+   a long one, and the trigger sits at a different x in every row. */
+.imp-how li{position:relative}
+.tipwrap{position:static;display:inline}
+.tip{position:relative;width:15px;height:15px;margin-left:5px;border-radius:50%;
+  border:1px solid var(--line);background:var(--ink-3);color:var(--mute);
+  font-family:var(--font-head);font-weight:700;font-size:10px;line-height:1;
+  padding:0;vertical-align:middle}
+/* the visible chip stays small; the tap target does not */
+.tip::after{content:'';position:absolute;inset:-9px;border-radius:50%}
+.tip:hover,.tip[aria-expanded="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tip-pop{
+  position:absolute;left:0;right:0;top:calc(100% + 7px);z-index:2;
+  background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 10px 26px rgba(0,0,0,.25);padding:10px 12px;
+  font-family:var(--font-body);font-size:11px;line-height:1.65;color:var(--mute);
+  opacity:0;visibility:hidden;transform:translateY(-3px);transition:.14s;text-align:left
+}
+.tip-pop.on{opacity:1;visibility:visible;transform:translateY(0)}
+.tip-pop b{display:block;color:var(--ink);margin-bottom:4px}
+/* one line per file: the name, then what it brings. The inner <b> has to beat
+   the block rule above or the description drops to its own line. */
+.tip-pop .tip-f{display:block;margin-top:5px}
+.tip-pop .tip-f b{display:inline;margin:0;color:var(--ink);font-weight:600}
+.tip-pop .tip-f b::after{content:' — ';color:var(--mute);font-weight:400}
 .toast{
   position:fixed;left:50%;transform:translateX(-50%) translateY(20px);
   bottom:calc(84px + var(--safe-b));z-index:60;
@@ -949,6 +995,12 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   <div class="acts" style="margin-top:2px;display:none" id="signOutRow">
     <button class="btn danger" id="signOutBtn" style="flex:1">Sign out</button>
   </div>
+  <div class="acts" style="margin-top:2px">
+    <button class="btn ghost" id="setImportBtn">Import from Letterboxd or Goodreads</button>
+  </div>
+  <div class="acts" style="margin-top:2px">
+    <button class="btn primary" id="setRateQueue">Rate backlog</button>
+  </div>
   <div class="acts">
     <button class="btn ghost" id="closeSet">Close</button>
   </div>
@@ -979,6 +1031,12 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   </div>
 </div>
 
+<!-- import from Letterboxd / Goodreads — centered modal, body swapped per step -->
+<div class="modal wide" id="impSheet" role="dialog" aria-modal="true">
+  <h2 id="impTitle">Import</h2>
+  <div id="impBody"></div>
+</div>
+
 <!-- edit-profile sheet -->
 <div class="sheet" id="profileSheet" role="dialog" aria-modal="true">
   <div class="grab"></div>
@@ -1001,11 +1059,11 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
   <div class="acts" style="margin-top:2px">
     <button class="btn ghost" id="devUnratedBtn" aria-pressed="false">Show only items needing a rating</button>
   </div>
-  <div class="acts">
-    <button class="btn primary" id="devRateQueue">Rate backlog</button>
-  </div>
   <div class="acts" style="margin-top:2px">
     <button class="btn ghost" id="fetchCoversBtn">Fetch missing covers</button>
+  </div>
+  <div class="acts" style="margin-top:2px">
+    <button class="btn ghost" id="devMatchBtn">Match unlinked items to sources</button>
   </div>
   <div class="acts">
     <button class="btn ghost" id="devClose">Close</button>
@@ -1023,7 +1081,7 @@ label.f>span,div.f>span{font-family:var(--font-body);font-size:10px;color:var(--
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="version" id="verStamp">xonk v2026.07.26k</div>
+<div class="version" id="verStamp">xonk v2026.07.28c</div>
 
 <script>
 /* ================= config ================= */
@@ -1141,6 +1199,7 @@ const S = {
   editing:null, statsCat:'overview', statsFilter:null,
   pfFilter:'all', profile:null, demoProfile:null,
   people:null, profileTarget:null, unratedOnly:false, lastRated:null, rq:null,
+  imp:null,           // in-flight CSV import: parsed candidates + what they'd do
   userData:{},   // uid -> that person's library, filled only when you open them
   userLoading:{} // uid -> in-flight fetch, so concurrent renders share one request
 };
@@ -3382,8 +3441,18 @@ function closeSheets(){
   $('#scrim').classList.remove('on');
   document.querySelectorAll('.sheet, .modal').forEach(s=>s.classList.remove('on'));
 }
+/* the backlog button carries its own count, so Settings answers "how much is
+   left to rate?" without opening anything */
+function labelRateQueue(sel){
+  const b = $(sel); if(!b) return 0;
+  const n = S.session ? rqBuild().length : 0;
+  b.textContent = n ? `Rate backlog (${n})` : 'Rate backlog — all done';
+  b.disabled = !n;
+  return n;
+}
 function openSet(){
   renderAcct();
+  labelRateQueue('#setRateQueue');
   openSheet('#setSheet');
 }
 
@@ -3712,9 +3781,6 @@ $('#verStamp').addEventListener('click', ()=>{
   const b = $('#devUnratedBtn');
   b.setAttribute('aria-pressed', S.unratedOnly ? 'true' : 'false');
   b.textContent = S.unratedOnly ? 'Needs-rating filter — on' : 'Show only items needing a rating';
-  const n = rqBuild().length;
-  $('#devRateQueue').textContent = n ? `Rate backlog (${n})` : 'Rate backlog — all done';
-  $('#devRateQueue').disabled = !n;
   openSheet('#devSheet');
 });
 $('#devUnratedBtn').addEventListener('click', ()=>{
@@ -3723,7 +3789,7 @@ $('#devUnratedBtn').addEventListener('click', ()=>{
   closeSheets(); render(); window.scrollTo({top:0});
   toast(S.unratedOnly ? 'Filtering to items needing a rating' : 'Showing all');
 });
-$('#devRateQueue').addEventListener('click', openRateQueue);
+$('#setRateQueue').addEventListener('click', openRateQueue);
 $('#devClose').addEventListener('click', closeSheets);
 $('#closeTheme').addEventListener('click', closeSheets);
 $('#themeGrid').addEventListener('click', e=>{
@@ -4171,6 +4237,534 @@ $('#statusPick').addEventListener('click', e=>{
   S.editing.status = b.dataset.status;
   S.editing.inProgress = S.editing.status==='inProgress';
   renderStatusPick();
+});
+
+/* ================= import — Letterboxd / Goodreads CSV =================
+   Both services record one star rating; xonk wants two axes. The star lands on
+   the QUALITY axis with enjoyment left null, which is exactly the shape `quadOf`
+   already calls legacy: it draws as a hollow ring, reads as rated across the
+   app, and `needsRating` still returns true — so every imported title queues up
+   in the rate backlog with one gesture left to give, and the queue's lockY rule
+   ("keep this quality, place the enjoyment") is already the right affordance.
+   Deriving an enjoyment score from the star instead would fill compare with
+   opinions the user never expressed.
+
+   An import can only ADD. A candidate matching a row you already have may
+   contribute unseen dates to `extra.logs` and a quality to a row carrying no
+   rating at all — never a title, a date you already had, or a rating you gave. */
+const IMP_BATCH = 100;
+
+/* ---- RFC4180-ish parser: Goodreads titles carry commas, quotes and newlines ---- */
+function parseCSV(text){
+  const rows = []; let row = [], f = '', q = false;
+  text = String(text||'');
+  if(text.charCodeAt(0)===0xFEFF) text = text.slice(1);   // Goodreads ships a BOM
+  for(let i=0; i<text.length; i++){
+    const c = text[i];
+    if(q){
+      if(c!=='"') f += c;
+      else if(text[i+1]==='"'){ f += '"'; i++; }   // "" inside a quoted field is one quote
+      else q = false;
+    }
+    else if(c==='"') q = true;
+    else if(c===','){ row.push(f); f=''; }
+    else if(c==='\n'){ row.push(f); rows.push(row); row=[]; f=''; }
+    else if(c!=='\r') f += c;
+  }
+  if(f!=='' || row.length){ row.push(f); rows.push(row); }
+  return rows;
+}
+function csvObjects(text){
+  const raw = parseCSV(text).filter(r=>r.some(v=>String(v).trim()!==''));
+  if(!raw.length) return {head:[], rows:[]};
+  const head = raw[0].map(h=>h.trim());
+  return {head, rows: raw.slice(1).map(r=>{
+    const o = {};
+    head.forEach((h,i)=>{ o[h] = r[i]!=null ? String(r[i]).trim() : ''; });
+    return o;
+  })};
+}
+/* Which export is this? Header first, because people rename downloads — except
+   that watched.csv and watchlist.csv have IDENTICAL headers, so the filename is
+   the only thing separating "I have seen this" from "I would like to".
+   Letterboxd's other files are recognised only so they can be named in the
+   "skipped" list — a silent drop reads as the import losing your data. */
+function impIdentify(filename, head){
+  const f = String(filename||'').toLowerCase();
+  const H = new Set(head);
+  if(H.has('Exclusive Shelf') || H.has('Book Id')) return 'goodreads';
+  if(!H.has('Letterboxd URI') || !H.has('Name')) return null;
+  if(f.includes('watchlist')) return 'watchlist';
+  if(H.has('Watched Date')) return 'diary';    // diary.csv, and reviews.csv too
+  if(H.has('Rating')) return 'ratings';
+  return 'watched';
+}
+const IMP_FILE_LABEL = {goodreads:'Goodreads library', diary:'Letterboxd diary',
+  ratings:'Letterboxd ratings', watched:'Letterboxd watched'};
+/* recognised only so the preview can name them and say why — a silent drop
+   reads as the import having lost your data */
+const IMP_UNUSED = {
+  watchlist:'a watchlist — xonk holds what you’ve seen, not what you mean to'
+};
+
+/* Goodreads writes YYYY/MM/DD, Letterboxd YYYY-MM-DD. Anything else is dropped
+   rather than guessed — a misread date silently reorders the whole library. */
+function impDate(s){
+  const m = String(s||'').trim().match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  return m ? m[1]+'-'+String(+m[2]).padStart(2,'0')+'-'+String(+m[3]).padStart(2,'0') : null;
+}
+/* stars -> quality on the same curve `quadOf` uses for legacy single numbers,
+   y = rating/scale*200-100. Letterboxd's 0.5–5 in halves is a /10 scale and
+   Goodreads' 1–5 in wholes is a /5; both collapse to stars*40-100, so 5★=+100,
+   3★=+20, 2.5★=0. A blank or zero rating stays unrated. */
+function impStarsToY(stars){
+  const v = +stars;
+  if(!Number.isFinite(v) || v<=0) return null;
+  return Math.max(-100, Math.min(100, Math.round(v*40-100)));
+}
+/* the export writes ISBNs as `="9780141439518"` so a spreadsheet won't eat the
+   leading zeroes; worth keeping because it makes the source match exact */
+function impIsbn(v){
+  const m = String(v||'').match(/(\d{9,13}[\dXx]?)/);
+  return m ? m[1] : null;
+}
+
+/* One candidate per film, merged across whichever of the three files were handed
+   over. The merge key is kind + normalised title + year, the same pairing
+   `sameWork` falls back to when there's no source id — the Letterboxd URI is
+   deliberately not used, because in diary.csv it identifies the ENTRY, not the
+   film, so keying on it would give one row per sitting.
+
+   Which file a date comes from decides what it MEANS. `Watched Date` (diary
+   only) is a real viewing and becomes a log. The `Date` column on every file is
+   when the entry was created on Letterboxd — good enough to date a film
+   arriving fresh, nowhere near good enough to claim a re-watch on a film you
+   already have — so it lands in `fallback` and never in `logs`. Keep that
+   split: it's the whole reason an import can't invent sittings. */
+function impMergeLetterboxd(files, acc){
+  files.forEach(({type, rows})=>{
+    rows.forEach(r=>{
+      const name = (r['Name']||'').trim();
+      if(!name) return;
+      const year = /^\d{4}$/.test(r['Year']||'') ? +r['Year'] : null;
+      const key = 'films|'+normName(name)+'|'+(year||'');
+      let e = acc.get(key);
+      if(!e){
+        e = {kind:'films', name, year, y:null, diary:null, logs:[], fallback:null,
+             author:null, isbn:null, status:'completed', source:'letterboxd'};
+        acc.set(key, e);
+      }
+      const added = impDate(r['Date']);
+      if(added && (!e.fallback || added < e.fallback)) e.fallback = added;
+      if(type==='ratings'){
+        const y = impStarsToY(r['Rating']);
+        if(y!=null) e.y = y;
+      } else if(type==='diary'){
+        const w = impDate(r['Watched Date']);
+        if(w) e.logs.push(w);          // deduped in impFinish — reviews.csv repeats diary rows
+        const y = impStarsToY(r['Rating']);
+        /* ratings.csv is your verdict now; a diary star is what you thought that
+           night, so the latest diary entry only fills in when it's all there is */
+        if(y!=null && (!e.diary || (w||'') >= e.diary.on)) e.diary = {y, on:w||''};
+      }
+    });
+  });
+}
+function impMergeGoodreads(rows, acc, skip){
+  rows.forEach(r=>{
+    const name = (r['Title']||'').trim();
+    if(!name) return;
+    const shelf = (r['Exclusive Shelf']||'').toLowerCase();
+    /* to-read is a wishlist; xonk only holds what you've actually started */
+    if(shelf==='to-read'){ skip.wish++; return; }
+    const year = +(r['Original Publication Year']||'') || +(r['Year Published']||'') || null;
+    const key = 'books|'+normName(name)+'|'+(year||'');
+    if(acc.has(key)) return;   // the export is already one row per book
+    const read = impDate(r['Date Read']);
+    /* Read Count can say 3, but the export carries a single Date Read — there is
+       no honest way to place the other sittings, so they aren't invented */
+    acc.set(key, {
+      kind:'books', name, year: year||null,
+      y: impStarsToY(r['My Rating']), diary:null,
+      logs: read ? [read] : [],   // a real read date, unlike Letterboxd's `Date`
+      fallback: impDate(r['Date Added']),
+      author: (r['Author']||'').trim() || null,
+      isbn: impIsbn(r['ISBN13']) || impIsbn(r['ISBN']),
+      status: shelf==='currently-reading' ? 'inProgress' : 'completed',
+      source: 'goodreads'
+    });
+  });
+}
+function impFinish(acc){
+  const out = [];
+  acc.forEach(e=>{
+    const logs = [...new Set(e.logs)].sort();
+    out.push({...e, logs,
+      y: e.y!=null ? e.y : (e.diary ? e.diary.y : null),
+      date: logs.length ? logs[logs.length-1] : e.fallback});
+  });
+  return out;
+}
+/* What each candidate would actually do, worked out before anything is written
+   so the panel can show the damage first. Three outcomes: a fresh row, an
+   additive update to a row already there, or nothing at all. */
+function impPlan(cands){
+  const add = [], upd = [], same = [];
+  cands.forEach(c=>{
+    const k = c.kind;
+    const existing = findExisting(k, {name:c.name, year:c.year, srcId:null});
+    if(!existing){ add.push(c); return; }
+    const have = logsOf(k, existing);
+    const logs = [...new Set(have.concat(c.logs))].sort();
+    const gainsLogs = logs.length > have.length;
+    /* a quality only lands on a row carrying no opinion at all — an import must
+       never talk over a rating you placed by hand */
+    const gainsY = c.y!=null && existing.ry==null && existing.rx==null;
+    if(!gainsLogs && !gainsY){ same.push(c); return; }
+    upd.push({c, existing, logs, gainsLogs, gainsY, gained: logs.length - have.length});
+  });
+  return {add, upd, same};
+}
+function impDraft(c){
+  const k = c.kind;
+  const o = {name:c.name, rx:null, ry:c.y, status:c.status,
+    inProgress: c.status==='inProgress',
+    imported: c.source};                  // provenance -> extra, so a re-run can find these
+  o[yearField(k)] = c.year || null;
+  o[dateFieldOf(k)] = c.date || null;
+  if(c.logs.length>1) o.logs = c.logs;    // a single sitting stays implicit in date_logged
+  if(c.author) o[creatorField(k)] = c.author;
+  if(c.isbn) o.isbn = c.isbn;             // exact Open Library lookup for the match pass
+  return o;
+}
+
+async function impRead(fileList){
+  const files = [...(fileList||[])];
+  if(!files.length) return;
+  S.imp = {step:'reading'};
+  impRender();
+  const acc = new Map(), lb = [], seen = [], unknown = [], skip = {wish:0};
+  for(const f of files){
+    let text = '';
+    try{ text = await f.text(); }
+    catch(_){ unknown.push({name:f.name, why:'couldn’t be read'}); continue; }
+    const {head, rows} = csvObjects(text);
+    const type = impIdentify(f.name, head);
+    if(!type){ unknown.push({name:f.name, why:'not a Letterboxd or Goodreads export'}); continue; }
+    if(IMP_UNUSED[type]){ unknown.push({name:f.name, why:IMP_UNUSED[type], html:true}); continue; }
+    seen.push({name:f.name, type, n:rows.length});
+    if(type==='goodreads') impMergeGoodreads(rows, acc, skip);
+    else lb.push({type, rows});
+  }
+  impMergeLetterboxd(lb, acc);
+  const cands = impFinish(acc);
+  S.imp = {step:'preview', files:seen, unknown, skip, cands, plan:impPlan(cands)};
+  impRender();
+}
+
+async function impCommit(){
+  const plan = S.imp && S.imp.plan;
+  if(!plan) return;
+  if(!S.session){ toast('Sign in to import'); return; }
+  const total = plan.add.length + plan.upd.length;
+  let done = 0, added = 0, updated = 0, failed = 0, lastErr = '';
+  /* the scrim can dismiss the panel mid-write and Settings can start a fresh
+     import behind it — the writes still have to finish, so they report into the
+     run they belong to rather than into whatever `S.imp` has become */
+  const run = S.imp;
+  const tick = ()=>{ const el = $('#impProg'); if(el && S.imp===run) el.textContent = `Writing ${done} of ${total}…`; };
+  run.step = 'run'; impRender(); tick();
+  /* inserts go up in batches — 900 films one round trip each is minutes of
+     latency for work Postgres does in one statement */
+  for(let i=0; i<plan.add.length; i+=IMP_BATCH){
+    const slice = plan.add.slice(i, i+IMP_BATCH);
+    try{
+      const res = await supa.from('items').insert(slice.map(c=>itemToRow(c.kind, impDraft(c)))).select();
+      if(res.error) throw res.error;
+      res.data.forEach(r=>{ if(S.data[r.kind]) S.data[r.kind].items.unshift(rowToItem(r)); });
+      added += res.data.length;
+    }catch(err){ failed += slice.length; lastErr = err.message||String(err); }
+    done += slice.length; tick();
+  }
+  for(const u of plan.upd){
+    const k = u.c.kind, o = {...u.existing};
+    if(u.gainsLogs){
+      if(u.logs.length>1) o.logs = u.logs;
+      o[dateFieldOf(k)] = u.logs[u.logs.length-1];   // date_logged tracks the latest sitting
+    }
+    if(u.gainsY){ o.ry = u.c.y; o.rx = null; }
+    try{
+      const res = await supa.from('items').update(itemToRow(k, o)).eq('id', u.existing.id).select().single();
+      if(res.error) throw res.error;
+      const it = rowToItem(res.data), arr = S.data[k].items;
+      const ix = arr.findIndex(x=>x.id===it.id);
+      if(ix>=0) arr[ix] = it;
+      updated++;
+    }catch(err){ failed++; lastErr = err.message||String(err); }
+    done++; tick();
+  }
+  run.result = {added, updated, skipped:plan.same.length, failed, lastErr};
+  run.step = 'done';
+  S.people = null;    // your card's counts in the directory just moved
+  render();
+  if(S.imp===run) impRender();
+  else toast(`Imported ${added}`);
+}
+
+/* ---- match unlinked rows to a source ----
+   A CSV gives a title, a year and nothing else: no cover, no director, and no
+   `extra.srcId` — which is the first and only exact tier `sameWork` matches on.
+   This walks every row without an id, searches its source, and accepts a hit
+   only on an exact normalised title with the year within one. A loose match
+   would manufacture agreement in compare, which is worse than having no id. */
+let impMatchStop = false;
+function impMatchable(){
+  const out = [];
+  Object.keys(COLLECTIONS).forEach(k=>{
+    ((S.data[k]&&S.data[k].items)||[]).forEach(it=>{ if(!it.srcId) out.push({k, it}); });
+  });
+  return out;
+}
+/* TMDB's release year and Letterboxd's can sit either side of a festival run */
+function impYearOk(a, b){ return (!a || !b) ? true : Math.abs(a-b) <= 1; }
+async function impMatchOne(k, it){
+  /* a Goodreads ISBN resolves to the exact work — no title guessing at all */
+  if(k==='books' && it.isbn){
+    try{
+      const r = await fetch(`https://openlibrary.org/isbn/${encodeURIComponent(it.isbn)}.json`);
+      if(r.ok){
+        const j = await r.json();
+        const w = (j.works||[])[0];
+        if(w && w.key) return {srcId:w.key, creator:null,
+          cover: (j.covers||[])[0] ? `https://covers.openlibrary.org/b/id/${j.covers[0]}-M.jpg` : null};
+      }
+    }catch(_){}
+  }
+  const year = itemYear(k, it);
+  const hits = await searchSuggestions(k, it.name).catch(()=>[]);
+  const hit = hits.find(h=>normName(h.title)===normName(it.name) && impYearOk(year, +h.year||null));
+  if(!hit) return null;
+  const raw = hit.raw || {}, out = {srcId:String(hit.id), cover:null, creator:null};
+  if(k==='films' || k==='tv') out.cover = raw.poster_path ? `https://image.tmdb.org/t/p/w342${raw.poster_path}` : null;
+  else if(k==='games') out.cover = raw.background_image || null;
+  else if(k==='books'){
+    out.cover = raw.cover_i ? `https://covers.openlibrary.org/b/id/${raw.cover_i}-M.jpg` : null;
+    out.creator = (raw.author_name||[]).join('/') || null;
+  }
+  /* the director costs a second call, and it's what the rate backlog groups its
+     runs of decisions by — worth it on a pass that is already slow */
+  if(k==='films' && !it[creatorField(k)]){
+    try{
+      const cj = await mediaApi({action:'detail', kind:'films', id:hit.id});
+      const d = (cj.crew||[]).find(x=>x.job==='Director');
+      if(d) out.creator = d.name;
+    }catch(_){}
+  }
+  return out;
+}
+async function impMatchRun(btn){
+  if(!S.session){ toast('Sign in first'); return; }
+  if(btn && btn.dataset.running==='1'){ impMatchStop = true; return; }   // second tap stops it
+  const queue = impMatchable();
+  if(!queue.length){ toast('Every row already links to a source'); return; }
+  impMatchStop = false;
+  const label = btn ? btn.textContent : '';
+  if(btn) btn.dataset.running = '1';
+  let done = 0, matched = 0;
+  for(const {k, it} of queue){
+    if(impMatchStop) break;
+    let found = null;
+    try{ found = await impMatchOne(k, it); }catch(_){}
+    if(found){
+      const o = {...it, srcId:found.srcId};
+      if(found.cover && !it.coverUrl) o.coverUrl = found.cover;
+      if(found.creator && !it[creatorField(k)]) o[creatorField(k)] = found.creator;
+      try{
+        const res = await supa.from('items').update(itemToRow(k, o)).eq('id', it.id).select().single();
+        if(!res.error){
+          const arr = S.data[k].items, ix = arr.findIndex(x=>x.id===it.id);
+          if(ix>=0) arr[ix] = rowToItem(res.data);
+          matched++;
+        }
+      }catch(_){}
+    }
+    done++;
+    if(btn) btn.textContent = `Matching ${done} / ${queue.length} — tap to stop`;
+    const p = $('#impProg');
+    if(p) p.textContent = `${matched} matched, ${queue.length-done} still to check`;
+    await new Promise(r=>setTimeout(r, 220));   // the search proxy is shared; don't hammer it
+  }
+  if(btn){ btn.dataset.running = '0'; btn.textContent = label; }
+  render();
+  toast(`${matched} matched to a source${impMatchStop ? ' — stopped' : ''}`);
+}
+
+/* ---- the panel: pick files -> preview -> write -> done ---- */
+/* A tap-toggled tooltip, not hover-only: the export steps are exactly what a
+   phone user needs and there is no hover on a phone. `body` is trusted markup
+   from the caller below, never anything read out of a file. */
+function impTip(id, body){
+  return `<span class="tipwrap"><button type="button" class="tip" data-tip="${esc(id)}"
+      aria-expanded="false" aria-label="How to get this file">i</button>
+    <span class="tip-pop" data-tippop="${esc(id)}" role="tooltip">${body}</span></span>`;
+}
+function impLi(n, label, sub){
+  const off = n ? '' : ' imp-zero';
+  return `<li><span><span class="${off.trim()}">${esc(label)}</span>${
+    sub ? `<span class="imp-sub" style="display:block">${esc(sub)}</span>` : ''
+  }</span><span class="imp-n${off}">${n}</span></li>`;
+}
+/* TYPE_LABELS is singular ("Film"), COLLECTIONS' label plural ("Films") — a
+   summary counts things, so it needs whichever the number calls for */
+function impKindN(k, n){
+  const lbl = n===1 ? (TYPE_LABELS[k]||k) : ((COLLECTIONS[k] && COLLECTIONS[k].label) || k);
+  return `${n} ${lbl.toLowerCase()}`;
+}
+function impCountBy(list, pick){
+  const n = {};
+  list.forEach(x=>{ const k = pick(x); n[k] = (n[k]||0)+1; });
+  return Object.keys(n).map(k=>impKindN(k, n[k])).join(' · ');
+}
+function impOpen(){
+  if(!S.session){ toast('Sign in to import'); openAuth(); return; }
+  S.imp = {step:'pick'};
+  closeSheets(); impRender(); openSheet('#impSheet');
+}
+function impRender(){
+  const body = $('#impBody');
+  if(!body) return;
+  const st = S.imp || {step:'pick'};
+  $('#impTitle').textContent = st.step==='done' ? 'Import complete' : 'Import';
+
+  if(st.step==='pick'){
+    body.innerHTML = `
+      <p class="note">Bring your history across from <b>Letterboxd</b> or <b>Goodreads</b>. An import only ever adds — nothing already in your library is overwritten.</p>
+      <ul class="imp-how">
+        <li><b>Letterboxd</b> — <code>watched.csv</code>, <code>ratings.csv</code>, <code>diary.csv</code>${impTip('lb', `
+          <b>Letterboxd → Settings → Data → Export your data.</b>
+          Unzip the download and choose all three together — each brings something the others don't:
+          <span class="tip-f"><b>watched.csv</b>every film you've seen</span>
+          <span class="tip-f"><b>ratings.csv</b>the star you gave it</span>
+          <span class="tip-f"><b>diary.csv</b>the dates you saw it, so re-watches count</span>
+          Any one on its own works too. Your watchlist stays behind.`)}</li>
+        <li><b>Goodreads</b> — the file from <i>Export Library</i>${impTip('gr', `
+          <b>Goodreads → My Books → Import and export → Export Library.</b>
+          Wait for it to build, download it, then choose that one file here. Books still on your <i>to-read</i> shelf stay behind.`)}</li>
+      </ul>
+      <label class="imp-file" id="impDrop">
+        <b>Choose CSV files</b>
+        or drop them here — several at once is fine
+        <input type="file" id="impFile" accept=".csv,text/csv" multiple>
+      </label>
+      <p class="note">Your stars arrive as <b>quality</b>, with enjoyment left empty — so everything you bring in lands in the rate backlog needing one gesture each. Watchlists and to-read shelves stay behind.</p>
+      <div class="acts"><button type="button" class="btn ghost" id="impClose">Close</button></div>`;
+    return;
+  }
+  if(st.step==='reading'){
+    body.innerHTML = `<p class="imp-prog">Reading the files…</p>`;
+    return;
+  }
+  if(st.step==='run'){
+    body.innerHTML = `<p class="imp-prog" id="impProg">Writing…</p>
+      <p class="note">Leave this open until it finishes.</p>`;
+    return;
+  }
+  if(st.step==='done'){
+    const r = st.result;
+    const backlog = S.session ? rqBuild().length : 0;
+    body.innerHTML = `
+      <ul class="imp-sum">
+        ${impLi(r.added, 'Added to your library', '')}
+        ${impLi(r.updated, 'Existing entries topped up', 'dates you hadn’t logged, or a quality where there was no rating')}
+        ${impLi(r.skipped, 'Already yours, left alone', '')}
+        ${r.failed ? impLi(r.failed, 'Failed', r.lastErr) : ''}
+      </ul>
+      <p class="note">What you brought in has a quality but <b>no enjoyment yet</b>. The rate backlog walks the lot one gesture at a time, keeping each imported star as the quality — it's the fastest way to make this library yours. It's in Settings whenever you want to come back to it.</p>
+      <p class="imp-prog" id="impProg">A CSV carries no covers, directors or source ids. Matching fills them in — and the source id is what lets compare pair your films with someone else's.</p>
+      ${backlog ? `<div class="acts"><button type="button" class="btn primary" id="impRate">Rate the backlog (${backlog})</button></div>` : ''}
+      <div class="acts"${backlog?' style="margin-top:10px"':''}>
+        <button type="button" class="btn ghost" id="impMatch">Match to sources</button>
+        <button type="button" class="btn ghost" id="impClose">Close</button>
+      </div>`;
+    return;
+  }
+
+  /* preview */
+  const {add, upd, same} = st.plan;
+  const rated = add.filter(c=>c.y!=null).length;
+  const gainsY = upd.filter(u=>u.gainsY).length;
+  const newDates = upd.reduce((n,u)=>n+u.gained, 0);
+  const repeats = add.filter(c=>c.logs.length>1).length;
+  const nothing = !add.length && !upd.length;
+  body.innerHTML = `
+    <p class="note">${st.files.length
+      ? 'Read ' + st.files.map(f=>`<b>${esc(IMP_FILE_LABEL[f.type]||f.type)}</b> (${f.n} row${f.n===1?'':'s'})`).join(', ') + '.'
+      : 'No usable export in those files.'}</p>
+    ${st.unknown.map(u=>`<p class="note warn"><b>${esc(u.name)}</b> — ${u.html ? u.why : esc(u.why)}. Skipped.</p>`).join('')}
+    <ul class="imp-sum">
+      ${impLi(add.length, 'New entries', [impCountBy(add, c=>c.kind),
+        rated ? `${rated} arrive${rated===1?'s':''} with a quality from your stars` : '',
+        repeats ? `${repeats} with a re-watch history` : ''].filter(Boolean).join(' · '))}
+      ${impLi(upd.length, 'Existing entries topped up',
+        [newDates ? `${newDates} date${newDates===1?'':'s'} you hadn’t logged` : '',
+         gainsY ? `${gainsY} still-unrated row${gainsY===1?' gains':'s gain'} a quality` : ''].filter(Boolean).join(' · '))}
+      ${impLi(same.length, 'Already yours, nothing to add', '')}
+      ${st.skip.wish ? impLi(st.skip.wish, 'On a to-read shelf, left behind', '') : ''}
+    </ul>
+    <p class="note${nothing?'':' warn'}">${nothing
+      ? 'Nothing to write — pick different files, or you have all of this already.'
+      : 'Your existing ratings and titles are never touched. This can’t be undone in one click, so check the numbers.'}</p>
+    <div class="acts">
+      <button type="button" class="btn ghost" id="impBack">← Other files</button>
+      <button type="button" class="btn primary" id="impGo"${nothing?' disabled':''}>Import ${add.length+upd.length}</button>
+    </div>`;
+}
+$('#setImportBtn').addEventListener('click', impOpen);
+$('#devMatchBtn').addEventListener('click', e=>impMatchRun(e.currentTarget));
+$('#impBody').addEventListener('change', e=>{ if(e.target.id==='impFile') impRead(e.target.files); });
+$('#impBody').addEventListener('click', e=>{
+  /* any click that isn't the trigger itself dismisses an open tooltip */
+  const trig = e.target.closest('.tip');
+  $('#impBody').querySelectorAll('.tip').forEach(t=>{
+    if(t===trig) return;
+    t.setAttribute('aria-expanded','false');
+    const p = t.parentNode.querySelector('.tip-pop'); if(p) p.classList.remove('on');
+  });
+  if(trig){
+    const open = trig.getAttribute('aria-expanded')==='true';
+    trig.setAttribute('aria-expanded', open ? 'false' : 'true');
+    const p = trig.parentNode.querySelector('.tip-pop');
+    if(p) p.classList.toggle('on', !open);
+    return;
+  }
+  if(e.target.closest('#impClose')){ S.imp = null; closeSheets(); return; }
+  if(e.target.closest('#impBack')){ S.imp = {step:'pick'}; impRender(); return; }
+  if(e.target.closest('#impGo')){ impCommit(); return; }
+  if(e.target.closest('#impRate')){ S.imp = null; openRateQueue(); return; }
+  const m = e.target.closest('#impMatch');
+  if(m){ impMatchRun(m); return; }
+});
+$('#impBody').addEventListener('keydown', e=>{
+  if(e.key!=='Escape') return;
+  const open = $('#impBody').querySelector('.tip[aria-expanded="true"]');
+  if(!open) return;
+  e.stopPropagation();          // dismiss the tooltip, not the whole panel
+  open.setAttribute('aria-expanded','false');
+  const p = open.parentNode.querySelector('.tip-pop'); if(p) p.classList.remove('on');
+  open.focus();
+});
+/* drop the files straight onto the panel */
+$('#impBody').addEventListener('dragover', e=>{
+  const d = e.target.closest('#impDrop'); if(!d) return;
+  e.preventDefault(); d.classList.add('over');
+});
+$('#impBody').addEventListener('dragleave', e=>{
+  const d = e.target.closest('#impDrop'); if(d) d.classList.remove('over');
+});
+$('#impBody').addEventListener('drop', e=>{
+  const d = e.target.closest('#impDrop'); if(!d) return;
+  e.preventDefault(); d.classList.remove('over');
+  if(e.dataTransfer && e.dataTransfer.files.length) impRead(e.dataTransfer.files);
 });
 
 /* ================= accounts (supabase) ================= */

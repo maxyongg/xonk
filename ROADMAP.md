@@ -125,7 +125,15 @@ longer debounce or a server-side fan-out if it ever bites.
 - **Finishing a Currently card doesn't append a log** — the ✓ only clears
   `in_progress`. Wiring it up would double-count against the add flow, so it needs
   a decision first.
-- **Letterboxd / Goodreads import** — CSV first (full history), RSS auto-sync later.
+- **Letterboxd / Goodreads RSS auto-sync** — the CSV import shipped (Settings → Import;
+  see `docs/ui-flows.md`), so the remaining half is keeping a library current without
+  re-exporting. Letterboxd publishes a per-user RSS feed of diary entries and Goodreads
+  one per shelf; both are cross-origin, so this needs an edge function to fetch and
+  parse, plus a decision on where the "last seen entry" watermark lives.
+- **Goodreads re-reads don't import.** Its export gives a `Read Count` but only one
+  `Date Read`, so a book read three times arrives as one log; the other sittings can't
+  be placed without inventing dates. Letterboxd has no such gap — `diary.csv` dates
+  every viewing. No fix short of asking the user to date them by hand.
 - **A second act for the landing hero** — a designed-but-unbuilt alternative has a ghost
   cursor deal titles off the backlog onto the graph, one drag each, with real pointer
   input taking over mid-loop. Deliberately not shipped: it teaches the same gesture the

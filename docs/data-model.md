@@ -24,7 +24,9 @@ times you log it; the count is just `logs.length` ("watched 5 times").
 
 Rows that were never re-logged have no `logs` key at all — `logsOf` derives `[date_logged]`
 for them, so there was nothing to migrate when this shipped. Deleting logs back down to
-one drops the array again (`saveRelog`, `removeLog`).
+one drops the array again (`saveRelog`, `removeLog`), and the CSV import writes `logs`
+only where Letterboxd's `diary.csv` dated two or more sittings (`impDraft`). Goodreads
+has no equivalent, so an imported re-read still arrives as one log.
 
 Helpers: `logsOf(k, item)`, `logCount(k, item)`, `dateFieldOf(k)`, and the wording tables
 `LOG_VERB` / `REPEAT_NOUN` / `ING` (watched/re-watch/watching per kind).
@@ -32,12 +34,15 @@ Helpers: `logsOf(k, item)`, `logCount(k, item)`, `dateFieldOf(k)`, and the wordi
 ## `extra` jsonb
 
 Holds everything without a dedicated column: `status`, `logs`, TV's `released`
-(first-episode air date), `srcId`, plus leftovers. Notes:
+(first-episode air date), `srcId`, `imported`, `isbn`, plus leftovers. Notes:
 
 - `in_progress` mirrors `status === 'inProgress'`.
 - `createdAt` rides along on the in-memory item but is stripped from `extra` on save.
 - `itemToRow` builds `extra` from every non-column, non-null key — so setting a key to
   `null` is how you *remove* it.
+- `imported` (`'letterboxd'` / `'goodreads'`) is provenance from the CSV import, and
+  `isbn` is a Goodreads ISBN13 kept so the source-match pass can resolve the exact work
+  instead of guessing from the title. Both only ever appear on imported rows.
 
 ## Per-category quirks
 
