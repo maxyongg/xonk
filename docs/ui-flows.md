@@ -133,9 +133,11 @@ user needs it at onboarding, and nobody finds the version stamp unprompted. One
   `rx = ry` would feed compare ~900 opinions the user never expressed.
 - **An import can only add.** `impPlan` sorts every candidate into add / update / leave
   alone *before* anything is written, and the preview shows those counts. An update may
-  contribute unseen dates to `logs` and a quality to a row with **no** rating at all
-  (`ry==null && rx==null`); it never touches a title, a date already held, or a rating
-  given by hand.
+  contribute unseen dates to `logs`, a quality to a row with **no** rating at all
+  (`ry==null && rx==null`), and a date to a row whose date field is **empty**
+  (`gainsDate`); it never touches a title, a date already held, or a rating given by
+  hand. `gainsDate` is also the repair path: re-importing the same file fixes rows a
+  parsing bug left blank, without creating duplicates.
 - **Three Letterboxd files are read**: `watched.csv` (everything seen), `ratings.csv`
   (the star), `diary.csv` (the dates, so re-watches count). `reviews.csv` identifies as
   a diary too — same columns plus `Review` — and its rows duplicate diary ones, which
@@ -146,6 +148,16 @@ user needs it at onboarding, and nobody finds the version stamp unprompted. One
   header first (people rename downloads) but has to fall back to the filename for those
   two — a watchlist imported as history is exactly the wrong outcome. Goodreads'
   `to-read` shelf is dropped for the same reason.
+- **Opening a CSV in Excel rewrites every date into the machine's short-date
+  format** — that is how `9/1/2026` turns up in a Letterboxd export, which natively
+  writes `YYYY-MM-DD`. It is not an edge case; it is what happens when someone looks at
+  the file before importing, and it silently nulled every date on the first real
+  import. Year-first is unambiguous; year-last is not, so `impDateStyle` decides the
+  day/month order **once per import** across every date column in every file, never per
+  row. Two signals: a component over 12 can only be a day, then "a date you already
+  watched something on cannot be in the future". The preview always states which way it
+  read them, with a worked example, and `#impFlip` swaps it — a wrong *order* is the
+  only import error that looks completely fine afterwards.
 - **Which file a date comes from decides what it means, and this is load-bearing.**
   `Watched Date` (diary only) is a real viewing → `logs`. The `Date` column present on
   *every* file is when the entry was created on Letterboxd → `fallback`, never `logs`:
